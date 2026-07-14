@@ -32,7 +32,7 @@ export function ShelterCard({
     <button
       onClick={() => onSelect(shelter)}
       className={cn(
-        "w-full text-left p-3.5 rounded-2xl transition-colors duration-150 cursor-pointer border active:scale-[0.99]",
+        "w-full text-left p-4 rounded-2xl transition-colors duration-150 cursor-pointer border active:scale-[0.99] min-h-[72px]",
         isDark
           ? "bg-[#222834] border-white/10 hover:border-white/20 text-white shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
           : "bg-white border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
@@ -42,7 +42,7 @@ export function ShelterCard({
         <div className="flex-1 min-w-0">
           {/* Header row: title + badge */}
           <div className="flex items-center gap-1.5 mb-1 truncate">
-            <h3 className={cn("text-[14px] font-semibold truncate", isDark ? "text-white" : "text-charcoal")}>
+            <h3 className={cn("text-[15px] font-semibold truncate", isDark ? "text-white" : "text-charcoal")}>
               {shelter.name}
             </h3>
             {shelter.verified && (
@@ -50,7 +50,7 @@ export function ShelterCard({
             )}
           </div>
 
-          <p className={cn("text-xs truncate mb-2", isDark ? "text-white/60" : "text-muted/70")}>
+          <p className={cn("text-[12px] truncate mb-2.5", isDark ? "text-white/60" : "text-muted/70")}>
             {shelter.address}
           </p>
 
@@ -80,7 +80,7 @@ export function ShelterCard({
                     className={cn("p-1 rounded", isDark ? "bg-white/10" : "bg-black/[0.03]")}
                     title={label}
                   >
-                    <Icon className="w-3 h-3" strokeWidth={2} />
+                    <Icon className="w-3.5 h-3.5" strokeWidth={2} />
                   </div>
                 ) : null
               )}
@@ -92,12 +92,12 @@ export function ShelterCard({
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <div
             title="Get Directions"
-            className="w-8 h-8 rounded-full bg-teal text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform"
+            className="w-10 h-10 rounded-full bg-teal text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform"
           >
-            <Compass className="w-4.5 h-4.5" strokeWidth={2} />
+            <Compass className="w-5 h-5" strokeWidth={2} />
           </div>
           {distance && (
-            <span className={cn("text-[11px] font-semibold", isDark ? "text-white/70" : "text-muted")}>
+            <span className={cn("text-[12px] font-semibold", isDark ? "text-white/70" : "text-muted")}>
               {distance}
             </span>
           )}

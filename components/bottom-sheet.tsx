@@ -219,7 +219,7 @@ export function BottomSheet({
         )}
 
         {/* Scrollable content container */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2.5 scrollbar-none">
+        <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-2.5 scrollbar-none" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 1.5rem))' }}>
           {children}
         </div>
       </div>

@@ -184,7 +184,7 @@ export function FilterBar({
     : { instruction: `Head towards ${activeRoute?.destinationName || "destination"}`, distance: activeRoute?.distanceKm || "", distanceMeters: 0, type: "straight" as const, location: [0, 0] as [number, number] };
 
   return (
-    <div className="fixed top-3 left-3 right-3 z-[500] pointer-events-none flex flex-col items-center gap-2">
+    <div className="fixed top-3 left-3 right-3 z-[500] pointer-events-none flex flex-col items-center gap-2" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {/* Search pill container with relative positioning for dropdown */}
       <div className="pointer-events-auto w-full md:max-w-xl relative">
         <motion.div
@@ -353,7 +353,7 @@ export function FilterBar({
           exit={{ opacity: 0, y: -12, scale: 0.96 }}
           className={cn(
             "pointer-events-auto w-full md:max-w-xl border",
-            "bg-[#15803d] text-white rounded-3xl p-4 shadow-[0_12px_36px_rgba(21,128,61,0.35)]",
+            "bg-[#15803d] text-white rounded-3xl px-4 py-3.5 shadow-[0_12px_36px_rgba(21,128,61,0.35)]",
             "flex flex-col gap-3"
           )}
         >
@@ -361,7 +361,7 @@ export function FilterBar({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               {/* Dynamic Turn Arrow Indicator */}
-              <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner">
                 {activeStep.type === "right" ? (
                   <CornerUpRight className="w-6 h-6 text-white" strokeWidth={2.8} />
                 ) : activeStep.type === "left" ? (
@@ -372,10 +372,10 @@ export function FilterBar({
               </div>
 
               <div className="min-w-0">
-                <p className="text-xs font-extrabold text-white/80 uppercase tracking-widest leading-none">
+                <p className="text-[11px] sm:text-xs font-extrabold text-white/80 uppercase tracking-widest leading-none">
                   In {activeStep.distance}
                 </p>
-                <h4 className="text-sm font-extrabold text-white truncate leading-snug mt-0.5">
+                <h4 className="text-[13px] sm:text-sm font-extrabold text-white leading-snug mt-0.5" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {activeStep.instruction}
                 </h4>
               </div>
@@ -391,22 +391,22 @@ export function FilterBar({
                 }
               }}
               title={isVoiceMuted ? "Unmute Voice Guidance" : "Mute Voice Guidance"}
-              className="p-2 rounded-full bg-white/15 hover:bg-white/25 transition-colors text-white shrink-0 active:scale-95"
+              className="p-2.5 rounded-full bg-white/15 hover:bg-white/25 transition-colors text-white shrink-0 active:scale-95 min-w-[40px] min-h-[40px] flex items-center justify-center"
             >
-              {isVoiceMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              {isVoiceMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </button>
           </div>
 
           {/* Bottom Bar: Destination, ETA, & Exit Button */}
           <div className="flex items-center justify-between border-t border-white/20 pt-3">
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <span className="text-base font-black text-white leading-none">
                 {remainingInfo.eta} min
               </span>
-              <span className="text-xs font-bold text-white/90">
+              <span className="text-[11px] sm:text-xs font-bold text-white/90">
                 • {remainingInfo.distance}
               </span>
-              <span className="text-xs font-semibold text-emerald-100 truncate">
+              <span className="text-[11px] sm:text-xs font-semibold text-emerald-100 truncate">
                 • {activeRoute.destinationName}
               </span>
             </div>
@@ -418,9 +418,9 @@ export function FilterBar({
                 }
                 onClearRoute();
               }}
-              className="px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-xs font-bold text-white transition-colors shrink-0 active:scale-95 flex items-center gap-1"
+              className="px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 text-[13px] font-bold text-white transition-colors shrink-0 active:scale-95 flex items-center gap-1.5 min-h-[36px]"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
               <span>Exit</span>
             </button>
           </div>

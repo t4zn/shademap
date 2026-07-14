@@ -31,9 +31,9 @@ interface ShelterDetailProps {
 }
 
 const AMENITIES = [
-  { key: "water" as const, icon: Droplets, label: "Drinking Water" },
-  { key: "seating" as const, icon: Armchair, label: "Seating Area" },
-  { key: "ac" as const, icon: Snowflake, label: "Air Conditioning" },
+  { key: "water" as const, icon: Droplets, label: "Water" },
+  { key: "seating" as const, icon: Armchair, label: "Seating" },
+  { key: "ac" as const, icon: Snowflake, label: "AC" },
   { key: "restroom" as const, icon: DoorOpen, label: "Restroom" },
 ];
 
@@ -73,13 +73,13 @@ export function ShelterDetailContent({
   const hasSteps = steps && steps.length > 0;
 
   return (
-    <div className="flex flex-col h-full space-y-3 pt-1">
-      {/* Apple iOS Card Header: Back button + Category Badge */}
-      <div className="flex items-center justify-between shrink-0 select-none pb-1">
+    <div className="flex flex-col h-full gap-3 pt-1">
+      {/* Header: Back / End Route + Category */}
+      <div className="flex items-center justify-between shrink-0 select-none">
         <button
           onClick={onClose}
           className={cn(
-            "flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95",
+            "flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 rounded-full transition-all active:scale-95 min-h-[36px]",
             isDark
               ? "bg-white/10 text-white hover:bg-white/15"
               : "bg-black/[0.05] text-charcoal hover:bg-black/[0.08]"
@@ -90,7 +90,7 @@ export function ShelterDetailContent({
         </button>
 
         <span
-          className="inline-flex px-3 py-1 rounded-full text-xs font-bold tracking-tight"
+          className="inline-flex px-3 py-1.5 rounded-full text-[11px] font-bold tracking-tight"
           style={{
             color: typeConfig.color,
             backgroundColor: isDark ? `${typeConfig.color}25` : typeConfig.bgColor,
@@ -101,11 +101,11 @@ export function ShelterDetailContent({
       </div>
 
       {/* Title & City */}
-      <div className="space-y-0.5">
-        <h2 className={cn("text-base md:text-lg font-extrabold leading-tight", isDark ? "text-white" : "text-charcoal")}>
+      <div className="space-y-0.5 px-0.5">
+        <h2 className={cn("text-[15px] sm:text-base md:text-lg font-extrabold leading-tight", isDark ? "text-white" : "text-charcoal")}>
           {shelter.name}
         </h2>
-        <p className={cn("text-xs font-medium text-teal")}>
+        <p className="text-[12px] font-medium text-teal">
           {shelter.city}
         </p>
       </div>
@@ -113,56 +113,56 @@ export function ShelterDetailContent({
       {/* ─── Active Navigation: Route Summary + Step List ─── */}
       {isNavigating && activeRoute ? (
         <>
-          {/* Route Summary Stats Bar */}
+          {/* Route Summary Bar */}
           <div
             className={cn(
-              "flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border text-xs",
+              "flex items-center gap-3 px-4 py-3 rounded-2xl border text-[13px]",
               isDark
                 ? "bg-teal/15 border-teal/25 text-white"
                 : "bg-teal/10 border-teal/20 text-charcoal"
             )}
           >
-            <Route className="w-4 h-4 text-teal shrink-0" strokeWidth={2} />
+            <Route className="w-5 h-5 text-teal shrink-0" strokeWidth={2} />
             <div className="flex items-center gap-3 font-semibold">
-              <span className="text-sm font-black text-teal">{activeRoute.etaMinutes} min</span>
+              <span className="text-base font-black text-teal">{activeRoute.etaMinutes} min</span>
               <span className="text-muted">•</span>
               <span>{activeRoute.distanceKm}</span>
             </div>
           </div>
 
-          {/* Turn-by-Turn Step List */}
+          {/* Turn-by-Turn Directions */}
           {hasSteps && (
-            <div className="space-y-1.5">
-              <h3 className={cn("text-xs font-bold uppercase tracking-wider text-muted/80 px-0.5")}>
+            <div className="space-y-2">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted/80 px-0.5">
                 Directions
               </h3>
               <div
                 className={cn(
-                  "rounded-2xl border overflow-hidden divide-y text-xs",
+                  "rounded-2xl border overflow-hidden divide-y",
                   isDark
                     ? "bg-[#222834] border-white/10 divide-white/10"
-                    : "bg-black/[0.03] border-black/[0.05] divide-black/[0.05]"
+                    : "bg-black/[0.02] border-black/[0.05] divide-black/[0.05]"
                 )}
               >
                 {steps.map((step, i) => (
                   <div
                     key={i}
                     className={cn(
-                      "px-3.5 py-2.5 flex items-center gap-3",
+                      "px-3.5 py-3 flex items-center gap-3 min-h-[48px]",
                       i === 0 && (isDark ? "bg-teal/10" : "bg-teal/5")
                     )}
                   >
                     <div className={cn(
-                      "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+                      "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
                       isDark ? "bg-white/10" : "bg-black/[0.05]"
                     )}>
                       <StepIcon type={step.type} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={cn("font-semibold leading-snug truncate", isDark ? "text-white/90" : "text-charcoal")}>
+                      <p className={cn("text-[13px] font-semibold leading-snug", isDark ? "text-white/90" : "text-charcoal")}>
                         {step.instruction}
                       </p>
-                      <p className="text-muted/70 text-[10px] font-medium mt-0.5">{step.distance}</p>
+                      <p className="text-muted/70 text-[11px] font-medium mt-0.5">{step.distance}</p>
                     </div>
                   </div>
                 ))}
@@ -170,11 +170,11 @@ export function ShelterDetailContent({
             </div>
           )}
 
-          {/* Open in Google Maps (secondary action during nav) */}
+          {/* Google Maps Button */}
           <button
             onClick={openInMaps}
             className={cn(
-              "w-full py-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
+              "w-full py-3 rounded-2xl border font-bold text-[13px] flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] min-h-[48px]",
               isDark
                 ? "bg-white/10 border-white/15 text-white hover:bg-white/15"
                 : "bg-white border-black/10 text-charcoal hover:bg-black/[0.03] shadow-sm"
@@ -183,68 +183,66 @@ export function ShelterDetailContent({
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Google_Maps_icon_%282026%29.svg/250px-Google_Maps_icon_%282026%29.svg.png"
               alt="Google Maps"
-              className="w-4 h-4 shrink-0 object-contain"
+              className="w-5 h-5 shrink-0 object-contain"
             />
             <span>Open in Google Maps</span>
           </button>
         </>
       ) : (
         <>
-          {/* ─── Standard Detail View (not navigating) ─── */}
+          {/* ─── Standard Detail View ─── */}
 
           {/* Verification Badge */}
           {shelter.verified && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-teal/10 border border-teal/20 text-xs font-semibold text-teal">
+            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-teal/10 border border-teal/20 text-[12px] font-semibold text-teal min-h-[40px]">
               <ShieldCheck className="w-4 h-4 shrink-0" strokeWidth={2} />
               <span>Verified — {shelter.source}</span>
             </div>
           )}
 
-          {/* Apple Style Grouped Information Block */}
+          {/* Address & Hours Block */}
           <div
             className={cn(
-              "rounded-2xl border overflow-hidden divide-y text-xs",
+              "rounded-2xl border overflow-hidden divide-y",
               isDark
                 ? "bg-[#222834] border-white/10 divide-white/10"
-                : "bg-black/[0.03] border-black/[0.05] divide-black/[0.05]"
+                : "bg-black/[0.02] border-black/[0.05] divide-black/[0.05]"
             )}
           >
-            {/* Address Row */}
-            <div className="px-3.5 py-2.5 flex items-start gap-2.5">
+            <div className="px-4 py-3 flex items-start gap-3 min-h-[44px]">
               <MapPin
                 className={cn("w-4 h-4 mt-0.5 shrink-0", isDark ? "text-white/60" : "text-muted")}
                 strokeWidth={1.8}
               />
-              <span className={cn("font-medium leading-relaxed", isDark ? "text-white/90" : "text-charcoal")}>
+              <span className={cn("text-[13px] font-medium leading-relaxed", isDark ? "text-white/90" : "text-charcoal")}>
                 {shelter.address}
               </span>
             </div>
 
-            {/* Hours Row */}
-            <div className="px-3.5 py-2.5 flex items-center gap-2.5">
+            <div className="px-4 py-3 flex items-center gap-3 min-h-[44px]">
               <Clock
                 className={cn("w-4 h-4 shrink-0", isDark ? "text-white/60" : "text-muted")}
                 strokeWidth={1.8}
               />
-              <span className={cn("font-medium", isDark ? "text-white/90" : "text-charcoal")}>
+              <span className={cn("text-[13px] font-medium", isDark ? "text-white/90" : "text-charcoal")}>
                 {shelter.hours}
               </span>
             </div>
           </div>
 
-          {/* Amenities Grid */}
-          <div className="space-y-1.5">
-            <h3 className={cn("text-xs font-bold uppercase tracking-wider text-muted/80 px-0.5")}>
-              Available Facilities
+          {/* Amenities — horizontal row for mobile */}
+          <div className="space-y-2">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted/80 px-0.5">
+              Facilities
             </h3>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {AMENITIES.map(({ key, icon: Icon, label }) => {
                 const available = shelter.amenities[key];
                 return (
                   <div
                     key={key}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border transition-colors",
+                      "flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-medium border min-h-[36px]",
                       available
                         ? isDark
                           ? "bg-white/10 text-white border-white/15 font-semibold"
@@ -255,18 +253,18 @@ export function ShelterDetailContent({
                     )}
                   >
                     <Icon className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{label}</span>
+                    <span>{label}</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Navigation Call-to-Action Bar */}
+          {/* Action Buttons */}
           <div className="flex flex-col gap-2 pt-1">
             <button
               onClick={() => onGetDirections(shelter)}
-              className="w-full py-3 rounded-xl bg-teal text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md hover:bg-teal/90 transition-all active:scale-[0.98]"
+              className="w-full py-3.5 rounded-2xl bg-teal text-white text-[13px] font-bold flex items-center justify-center gap-2.5 shadow-md hover:bg-teal/90 transition-all active:scale-[0.98] min-h-[48px]"
             >
               <Navigation className="w-4 h-4" />
               Start Route
@@ -275,7 +273,7 @@ export function ShelterDetailContent({
             <button
               onClick={openInMaps}
               className={cn(
-                "w-full py-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
+                "w-full py-3 rounded-2xl border font-bold text-[13px] flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] min-h-[48px]",
                 isDark
                   ? "bg-white/10 border-white/15 text-white hover:bg-white/15"
                   : "bg-white border-black/10 text-charcoal hover:bg-black/[0.03] shadow-sm"
@@ -284,7 +282,7 @@ export function ShelterDetailContent({
               <img
                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Google_Maps_icon_%282026%29.svg/250px-Google_Maps_icon_%282026%29.svg.png"
                 alt="Google Maps"
-                className="w-4 h-4 shrink-0 object-contain"
+                className="w-5 h-5 shrink-0 object-contain"
               />
               <span>Open in Google Maps</span>
             </button>
