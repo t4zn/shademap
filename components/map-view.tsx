@@ -159,8 +159,8 @@ function MapViewInner({
       center={center || DEFAULT_CENTER}
       zoom={DEFAULT_ZOOM}
       className="w-full h-full"
-      zoomControl={true}
-      attributionControl={true}
+      zoomControl={false}
+      attributionControl={false}
     >
       <MapEventsHandler
         center={center}

@@ -26,26 +26,33 @@ export function BottomSheet({
   const dragControls = useDragControls();
   const constraintsRef = useRef<HTMLDivElement>(null);
 
-  // Heights for each snap point
+  // Smooth Google Maps snap heights
   const snapHeights = {
-    peek: "180px",
-    half: "50vh",
-    full: "85vh",
+    peek: "185px",
+    half: "55vh",
+    full: "90vh",
   };
 
+  // Ultra-responsive Google Maps drag thresholds
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     const velocity = info.velocity.y;
     const offset = info.offset.y;
 
-    if (velocity > 500 || offset > 100) {
-      // Swipe down
+    if (velocity > 150 || offset > 40) {
+      // Swiping downward
       if (snapPoint === "full") setSnapPoint("half");
       else setSnapPoint("peek");
-    } else if (velocity < -500 || offset < -100) {
-      // Swipe up
+    } else if (velocity < -150 || offset < -40) {
+      // Swiping upward
       if (snapPoint === "peek") setSnapPoint("half");
       else setSnapPoint("full");
     }
+  };
+
+  const toggleSnap = () => {
+    if (snapPoint === "peek") setSnapPoint("half");
+    else if (snapPoint === "half") setSnapPoint("full");
+    else setSnapPoint("peek");
   };
 
   return (
@@ -56,33 +63,39 @@ export function BottomSheet({
         }}
         transition={{
           type: "spring",
-          damping: 30,
-          stiffness: 300,
+          damping: 24,
+          stiffness: 320,
+          mass: 0.6,
         }}
         drag="y"
         dragControls={dragControls}
         dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.2}
+        dragElastic={0.15}
         onDragEnd={handleDragEnd}
         className={cn(
           "pointer-events-auto flex flex-col overflow-hidden transition-colors duration-300 relative",
-          "rounded-t-3xl shadow-[0_-4px_40px_rgba(0,0,0,0.18)]",
+          "rounded-t-3xl shadow-[0_-6px_36px_rgba(0,0,0,0.18)] border-t",
           isDark
-            ? "bg-[#181d28] text-white border-t border-white/10"
-            : "bg-white text-charcoal border-t border-black/[0.04]"
+            ? "bg-[#181d28] text-white border-white/10"
+            : "bg-white text-charcoal border-black/[0.05]"
         )}
       >
-        {/* Handle */}
+        {/* Drag handle area with tap-to-toggle */}
         <div
-          className="flex flex-col items-center pt-2.5 pb-2 cursor-grab active:cursor-grabbing shrink-0"
+          onClick={toggleSnap}
+          className="flex flex-col items-center pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0 group select-none"
           onPointerDown={(e) => dragControls.start(e)}
         >
-          <div className={cn("w-9 h-1 rounded-full", isDark ? "bg-white/20" : "bg-black/10")} />
+          <div className={cn("w-10 h-1.5 rounded-full transition-all group-hover:scale-x-110", isDark ? "bg-white/30" : "bg-black/20")} />
         </div>
 
-        {/* Title bar with Locate Me button & count badge grouped on right */}
+        {/* Title bar */}
         {title && (
-          <div className="px-5 pb-3 flex items-center justify-between shrink-0">
+          <div
+            onClick={toggleSnap}
+            className="px-5 pb-3 flex items-center justify-between shrink-0 cursor-pointer select-none"
+            onPointerDown={(e) => dragControls.start(e)}
+          >
             <h2 className={cn("text-base font-bold", isDark ? "text-white" : "text-charcoal")}>{title}</h2>
 
             <div className="flex items-center gap-2 shrink-0">
@@ -100,7 +113,10 @@ export function BottomSheet({
               {/* Blue Geolocation trigger FAB */}
               {onLocate && (
                 <button
-                  onClick={onLocate}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLocate();
+                  }}
                   disabled={isLocating}
                   title="Locate Me"
                   className={cn(
@@ -125,8 +141,8 @@ export function BottomSheet({
           </div>
         )}
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-2.5">
+        {/* Smooth continuous scrollable shelter list */}
+        <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-2.5 scrollbar-none">
           {children}
         </div>
       </motion.div>
