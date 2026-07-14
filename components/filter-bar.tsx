@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -39,6 +39,7 @@ interface FilterBarProps {
   onToggleMapStyle: () => void;
   activeRoute: ActiveRoute | null;
   isNavigating: boolean;
+  userLocation: [number, number] | null;
   onClearRoute: () => void;
   onOpenPartnerModal: () => void;
 }
@@ -49,6 +50,17 @@ const FILTERS: { value: FilterType; label: string }[] = [
   { value: "municipal", label: "Municipal" },
   { value: "community", label: "Community" },
 ];
+
+/** Haversine formula to compute distance in meters between two GPS points */
+function gpsDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export function FilterBar({
   searchQuery,
@@ -61,56 +73,115 @@ export function FilterBar({
   onToggleMapStyle,
   activeRoute,
   isNavigating,
+  userLocation,
   onClearRoute,
   onOpenPartnerModal,
 }: FilterBarProps) {
   const isDark = mapStyle === "dark";
   const showDropdown = searchQuery.trim().length > 0;
 
-  // Real-time Turn-by-Turn step narration sequence index
+  // Navigation state
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVoiceMuted, setIsVoiceMuted] = useState(false);
+  const [livePosition, setLivePosition] = useState<[number, number] | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const lastSpokenStepRef = useRef<number>(-1);
 
-  // Generate dynamic step instructions if none provided
-  const steps = activeRoute?.steps || [
-    { instruction: "Head north on main corridor towards shade zone", distance: "200 m", type: "straight" as const },
-    { instruction: `Turn right on shade lane leading to ${activeRoute?.destinationName || "rest point"}`, distance: "450 m", type: "right" as const },
-    { instruction: `Arrive at ${activeRoute?.destinationName || "Destination"} on the right`, distance: "50 m", type: "destination" as const },
-  ];
+  const steps = activeRoute?.steps;
+  const hasRealSteps = steps && steps.length > 0;
 
-  // Auto-progress simulated turn step sequence & trigger speech narration ONLY when live navigation is active
+  // Start high-accuracy GPS watching when navigation is active
   useEffect(() => {
-    if (!activeRoute || !isNavigating) {
+    if (!isNavigating || !activeRoute) {
+      // Clean up GPS watch & speech
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
       setCurrentStepIndex(0);
+      setLivePosition(null);
+      lastSpokenStepRef.current = -1;
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
       return;
     }
 
+    // Initialize live position from passed-in user location
+    if (userLocation) {
+      setLivePosition(userLocation);
+    }
+
+    // Start high-accuracy GPS watcher for real-time position tracking
+    if (typeof navigator !== "undefined" && "geolocation" in navigator) {
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          setLivePosition([pos.coords.latitude, pos.coords.longitude]);
+        },
+        () => {}, // Silently handle errors
+        { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }
+      );
+    }
+
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, [isNavigating, activeRoute, userLocation]);
+
+  // GPS-based step advancement: advance only when user physically moves near next step waypoint
+  useEffect(() => {
+    if (!isNavigating || !hasRealSteps || !livePosition) return;
+
+    // Find the closest upcoming step the user is near (within 50m threshold)
+    for (let i = currentStepIndex; i < steps.length; i++) {
+      const step = steps[i];
+      const dist = gpsDistanceMeters(livePosition[0], livePosition[1], step.location[0], step.location[1]);
+      if (dist < 50 && i > currentStepIndex) {
+        setCurrentStepIndex(i);
+        break;
+      }
+    }
+  }, [isNavigating, hasRealSteps, livePosition, currentStepIndex, steps]);
+
+  // Voice narration: speak current step instruction when step index changes
+  useEffect(() => {
+    if (!isNavigating || !hasRealSteps) return;
+    if (isVoiceMuted) return;
+    if (lastSpokenStepRef.current === currentStepIndex) return;
+
     const currentStep = steps[currentStepIndex];
-    if (currentStep && !isVoiceMuted && typeof window !== "undefined" && "speechSynthesis" in window) {
+    if (currentStep && typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(currentStep.instruction);
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
       window.speechSynthesis.speak(utterance);
+      lastSpokenStepRef.current = currentStepIndex;
     }
+  }, [isNavigating, hasRealSteps, currentStepIndex, isVoiceMuted, steps]);
 
-    // Step auto-progress timer simulating real-time driving progression
-    const timer = setInterval(() => {
-      setCurrentStepIndex((prev) => (prev + 1) % steps.length);
-    }, 6000);
+  // Compute remaining distance and ETA from current position
+  const remainingInfo = useMemo(() => {
+    if (!hasRealSteps || !livePosition) {
+      return { distance: activeRoute?.distanceKm || "", eta: activeRoute?.etaMinutes || 0 };
+    }
+    let remainingDist = 0;
+    for (let i = currentStepIndex; i < steps.length; i++) {
+      remainingDist += steps[i].distanceMeters;
+    }
+    const remainingKm = remainingDist < 1000
+      ? `${Math.round(remainingDist)} m`
+      : `${(remainingDist / 1000).toFixed(1)} km`;
+    const remainingEta = Math.max(1, Math.round((remainingDist / 1000) / 25 * 60));
+    return { distance: remainingKm, eta: remainingEta };
+  }, [hasRealSteps, livePosition, currentStepIndex, steps, activeRoute]);
 
-    return () => {
-      clearInterval(timer);
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, [activeRoute, isNavigating, currentStepIndex, isVoiceMuted, steps]);
-
-  const activeStep = steps[currentStepIndex] || steps[0];
+  const activeStep = hasRealSteps
+    ? steps[currentStepIndex] || steps[0]
+    : { instruction: `Head towards ${activeRoute?.destinationName || "destination"}`, distance: activeRoute?.distanceKm || "", distanceMeters: 0, type: "straight" as const, location: [0, 0] as [number, number] };
 
   return (
     <div className="fixed top-3 left-3 right-3 z-[500] pointer-events-none flex flex-col items-center gap-2">
@@ -330,10 +401,10 @@ export function FilterBar({
           <div className="flex items-center justify-between border-t border-white/20 pt-3">
             <div className="flex items-center gap-3 min-w-0">
               <span className="text-base font-black text-white leading-none">
-                {activeRoute.etaMinutes} min
+                {remainingInfo.eta} min
               </span>
               <span className="text-xs font-bold text-white/90">
-                • {activeRoute.distanceKm}
+                • {remainingInfo.distance}
               </span>
               <span className="text-xs font-semibold text-emerald-100 truncate">
                 • {activeRoute.destinationName}

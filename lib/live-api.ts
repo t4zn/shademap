@@ -89,11 +89,45 @@ export interface RealRoadRouteResult {
   points: [number, number][];
   distanceMeters: number;
   durationSeconds: number;
+  steps: {
+    instruction: string;
+    distance: string;
+    distanceMeters: number;
+    type: "straight" | "left" | "right" | "u-turn" | "destination";
+    location: [number, number];
+  }[];
+}
+
+/**
+ * Translate OSRM maneuver type + modifier into a simplified turn direction type
+ */
+function parseOSRMManeuverType(
+  maneuverType: string,
+  modifier?: string
+): "straight" | "left" | "right" | "u-turn" | "destination" {
+  if (maneuverType === "arrive") return "destination";
+  if (maneuverType === "depart") return "straight";
+  if (maneuverType === "turn" || maneuverType === "new name" || maneuverType === "end of road" || maneuverType === "fork") {
+    if (modifier?.includes("left")) return "left";
+    if (modifier?.includes("right")) return "right";
+    if (modifier?.includes("uturn")) return "u-turn";
+    return "straight";
+  }
+  if (maneuverType === "roundabout" || maneuverType === "rotary") {
+    if (modifier?.includes("left")) return "left";
+    return "right";
+  }
+  return "straight";
+}
+
+function formatStepDistance(meters: number): string {
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
 }
 
 /**
  * Open Source Routing Machine (OSRM) Live Real-Road Routing API
- * Fetches actual turn-by-turn road network coordinates connecting start and target coordinates.
+ * Fetches actual turn-by-turn road network coordinates with real maneuver steps.
  * Free, zero API key required.
  */
 export async function fetchOSRMRealRoadRoute(
@@ -102,7 +136,7 @@ export async function fetchOSRMRealRoadRoute(
   destLat: number,
   destLng: number
 ): Promise<RealRoadRouteResult | null> {
-  const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+  const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${destLng},${destLat}?overview=full&geometries=geojson&steps=true`;
 
   try {
     const response = await fetch(url);
@@ -118,10 +152,41 @@ export async function fetchOSRMRealRoadRoute(
       (coord: [number, number]) => [coord[1], coord[0]]
     );
 
+    // Parse OSRM leg steps into clean TurnStep objects
+    const steps: RealRoadRouteResult["steps"] = [];
+    if (route.legs) {
+      for (const leg of route.legs) {
+        if (leg.steps) {
+          for (const step of leg.steps) {
+            const maneuver = step.maneuver;
+            if (!maneuver) continue;
+
+            const instruction =
+              step.name && step.name !== ""
+                ? `${maneuver.type === "arrive" ? "Arrive at" : maneuver.modifier ? maneuver.modifier.charAt(0).toUpperCase() + maneuver.modifier.slice(1) : "Continue"} on ${step.name}`
+                : maneuver.type === "arrive"
+                ? "You have arrived at your destination"
+                : maneuver.type === "depart"
+                ? "Start driving"
+                : `${maneuver.modifier ? maneuver.modifier.charAt(0).toUpperCase() + maneuver.modifier.slice(1) : "Continue"}`;
+
+            steps.push({
+              instruction,
+              distance: formatStepDistance(step.distance || 0),
+              distanceMeters: step.distance || 0,
+              type: parseOSRMManeuverType(maneuver.type, maneuver.modifier),
+              location: [maneuver.location[1], maneuver.location[0]], // OSRM returns [lng, lat]
+            });
+          }
+        }
+      }
+    }
+
     return {
       points,
       distanceMeters: route.distance,
       durationSeconds: route.duration,
+      steps,
     };
   } catch (err) {
     console.warn("OSRM real road routing fetch failed", err);

@@ -154,11 +154,13 @@ export default function RootMapPage() {
       let routePoints: [number, number][] = [];
       let etaMinutes = 5;
       let distanceKm = "1.5 km";
+      let steps: ActiveRoute["steps"] = undefined;
 
       if (realRoute && realRoute.points.length > 0) {
         routePoints = realRoute.points;
         etaMinutes = Math.max(2, Math.round(realRoute.durationSeconds / 60));
         distanceKm = formatDistance(realRoute.distanceMeters / 1000);
+        steps = realRoute.steps.length > 0 ? realRoute.steps : undefined;
       } else {
         // Fallback smooth road curve waypoints
         const midLat = (start[0] + destination[0]) / 2;
@@ -181,6 +183,7 @@ export default function RootMapPage() {
         etaMinutes,
         distanceKm,
         shadeSaving: "40%",
+        steps,
       });
     },
     [userLocation]
@@ -215,7 +218,7 @@ export default function RootMapPage() {
       {/* Viewport Map */}
       <div className="flex-1 relative">
         <MapView
-          shelters={allShelters}
+          shelters={selectedShelter ? [selectedShelter] : allShelters}
           onShelterSelect={handleShelterSelect}
           userLocation={userLocation}
           center={mapCenter}
@@ -236,6 +239,7 @@ export default function RootMapPage() {
           onToggleMapStyle={toggleMapStyle}
           activeRoute={activeRoute}
           isNavigating={isNavigating}
+          userLocation={userLocation}
           onClearRoute={() => {
             setActiveRoute(null);
             setIsNavigating(false);
@@ -262,10 +266,11 @@ export default function RootMapPage() {
               setIsNavigating(false);
             }}
             onGetDirections={(s) => {
-              setSelectedShelter(null);
               handleStartInAppRouting(s);
             }}
             isDark={mapStyle === "dark"}
+            isNavigating={isNavigating}
+            activeRoute={activeRoute}
           />
         ) : (
           nearbyShelters.map((shelter, i) => (

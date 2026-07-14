@@ -60,7 +60,9 @@ function createUserLocationIcon(): L.DivIcon {
 export interface TurnStep {
   instruction: string;
   distance: string;
+  distanceMeters: number;
   type: "straight" | "left" | "right" | "u-turn" | "destination";
+  location: [number, number]; // [lat, lng] of the maneuver point
 }
 
 export interface ActiveRoute {
@@ -112,7 +114,7 @@ function MapEventsHandler({
     }
   }, [map, url, attribution]);
 
-  // Safely manage polyline navigation route layers imperatively to avoid React DOM element removal errors
+  // Safely manage polyline navigation route layers & fit bounds to top 50% viewport above bottom drawer
   useEffect(() => {
     if (activeRoute && activeRoute.points.length > 0) {
       const casingColor = mapStyle === "dark" ? "#60a5fa" : "#1d4ed8";
@@ -143,6 +145,15 @@ function MapEventsHandler({
         polylineCoreRef.current.setLatLngs(activeRoute.points);
         polylineCoreRef.current.setStyle({ color: coreColor });
       }
+
+      // Automatically fit map bounds around active route polyline with heavy bottom padding to keep the path visible above the bottom drawer
+      const bounds = L.latLngBounds(activeRoute.points);
+      map.fitBounds(bounds, {
+        paddingTopLeft: [60, 100],
+        paddingBottomRight: [60, window.innerHeight * 0.55],
+        animate: true,
+        duration: 1.2,
+      });
     } else {
       if (polylineCasingRef.current) {
         map.removeLayer(polylineCasingRef.current);
@@ -155,18 +166,23 @@ function MapEventsHandler({
     }
   }, [map, activeRoute, mapStyle]);
 
-  // Smooth fly to center ONLY when center prop actually changes via locate click
+  // Smooth fly to center ONLY when center prop actually changes via locate click and no active route fitBounds is active
   useEffect(() => {
-    if (!center) return;
+    if (!center || activeRoute) return;
     if (
       !prevCenterRef.current ||
       prevCenterRef.current[0] !== center[0] ||
       prevCenterRef.current[1] !== center[1]
     ) {
-      map.flyTo(center, 14, { duration: 1.2 });
+      // Offset target center upwards so marker remains visible above bottom drawer
+      const targetPoint = map.project(center, 14);
+      const adjustedPoint = L.point(targetPoint.x, targetPoint.y + window.innerHeight * 0.22);
+      const adjustedCenter = map.unproject(adjustedPoint, 14);
+
+      map.flyTo(adjustedCenter, 14, { duration: 1.2 });
       prevCenterRef.current = center;
     }
-  }, [map, center]);
+  }, [map, center, activeRoute]);
 
   // Listen to map drag/pan end
   useEffect(() => {

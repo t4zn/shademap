@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Locate } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,10 @@ interface BottomSheetProps {
   hasActiveDetail?: boolean;
 }
 
+const MIN_HEIGHT = 185;
+const MAX_HEIGHT_VH = 0.75; // 75vh max expanded
+const DETAIL_HEIGHT_VH = 0.55;
+
 export function BottomSheet({
   children,
   title,
@@ -23,60 +27,138 @@ export function BottomSheet({
   isLocating = false,
   hasActiveDetail = false,
 }: BottomSheetProps) {
-  // Remembers user's previous list drawer state (minimized vs expanded)
-  const [userListExpanded, setUserListExpanded] = useState(false);
-  const dragStartYRef = useRef<number | null>(null);
+  const [sheetHeightPx, setSheetHeightPx] = useState(MIN_HEIGHT);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartYRef = useRef<number>(0);
+  const dragStartHeightRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // When active location detail is open, lock to 55vh; when viewing list, restore user's exact state
-  const sheetHeight = hasActiveDetail
-    ? "55vh"
-    : userListExpanded
-    ? "60vh"
-    : "185px";
+  // Compute pixel bounds
+  const maxHeightPx = typeof window !== "undefined" ? window.innerHeight * MAX_HEIGHT_VH : 600;
+  const detailHeightPx = typeof window !== "undefined" ? window.innerHeight * DETAIL_HEIGHT_VH : 400;
 
-  const toggleSnap = () => {
-    if (hasActiveDetail) return;
-    setUserListExpanded((prev) => !prev);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (hasActiveDetail) return;
-    dragStartYRef.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (hasActiveDetail || dragStartYRef.current === null) return;
-    const endY = e.changedTouches[0].clientY;
-    const diff = dragStartYRef.current - endY;
-    dragStartYRef.current = null;
-
-    if (diff > 40) {
-      // Swiped Up -> Expand list
-      setUserListExpanded(true);
-    } else if (diff < -40) {
-      // Swiped Down -> Minimize list
-      setUserListExpanded(false);
+  // Lock to detail height when shelter detail is open
+  useEffect(() => {
+    if (hasActiveDetail) {
+      setSheetHeightPx(detailHeightPx);
     }
-  };
+  }, [hasActiveDetail, detailHeightPx]);
+
+  // Snap to nearest clean position on drag end
+  const snapToNearest = useCallback(
+    (currentHeight: number, velocity: number) => {
+      // If velocity is strong enough, snap in the swipe direction
+      if (velocity > 300) {
+        setSheetHeightPx(MIN_HEIGHT);
+        return;
+      }
+      if (velocity < -300) {
+        setSheetHeightPx(maxHeightPx);
+        return;
+      }
+
+      // Otherwise snap to nearest boundary
+      const midPoint = (MIN_HEIGHT + maxHeightPx) / 2;
+      setSheetHeightPx(currentHeight > midPoint ? maxHeightPx : MIN_HEIGHT);
+    },
+    [maxHeightPx]
+  );
+
+  // ─── Touch handlers ───
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (hasActiveDetail) return;
+      setIsDragging(true);
+      dragStartYRef.current = e.touches[0].clientY;
+      dragStartHeightRef.current = sheetHeightPx;
+    },
+    [hasActiveDetail, sheetHeightPx]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isDragging || hasActiveDetail) return;
+      const deltaY = dragStartYRef.current - e.touches[0].clientY;
+      const newHeight = Math.min(maxHeightPx, Math.max(MIN_HEIGHT, dragStartHeightRef.current + deltaY));
+      setSheetHeightPx(newHeight);
+    },
+    [isDragging, hasActiveDetail, maxHeightPx]
+  );
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isDragging || hasActiveDetail) return;
+      setIsDragging(false);
+      const endY = e.changedTouches[0].clientY;
+      const velocity = endY - dragStartYRef.current; // positive = swiped down
+      const elapsed = 1; // approximate
+      snapToNearest(sheetHeightPx, velocity / elapsed);
+    },
+    [isDragging, hasActiveDetail, sheetHeightPx, snapToNearest]
+  );
+
+  // ─── Mouse handlers (desktop drag) ───
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (hasActiveDetail) return;
+      e.preventDefault();
+      setIsDragging(true);
+      dragStartYRef.current = e.clientY;
+      dragStartHeightRef.current = sheetHeightPx;
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const deltaY = dragStartYRef.current - moveEvent.clientY;
+        const newHeight = Math.min(maxHeightPx, Math.max(MIN_HEIGHT, dragStartHeightRef.current + deltaY));
+        setSheetHeightPx(newHeight);
+      };
+
+      const handleMouseUp = (upEvent: MouseEvent) => {
+        setIsDragging(false);
+        const velocity = upEvent.clientY - dragStartYRef.current;
+        const currentH = Math.min(maxHeightPx, Math.max(MIN_HEIGHT, dragStartHeightRef.current + (dragStartYRef.current - upEvent.clientY)));
+        snapToNearest(currentH, velocity);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    },
+    [hasActiveDetail, sheetHeightPx, maxHeightPx, snapToNearest]
+  );
+
+  // Click to toggle (fallback for simple taps)
+  const handleClick = useCallback(() => {
+    if (hasActiveDetail) return;
+    if (sheetHeightPx > MIN_HEIGHT + 20) {
+      setSheetHeightPx(MIN_HEIGHT);
+    } else {
+      setSheetHeightPx(maxHeightPx);
+    }
+  }, [hasActiveDetail, sheetHeightPx, maxHeightPx]);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[500] pointer-events-none flex justify-center">
       <div
-        style={{ height: sheetHeight }}
+        ref={containerRef}
+        style={{ height: hasActiveDetail ? `${detailHeightPx}px` : `${sheetHeightPx}px` }}
         className={cn(
           "pointer-events-auto w-full md:max-w-xl flex flex-col overflow-hidden relative border-t",
           "rounded-t-3xl md:rounded-3xl shadow-[0_-6px_36px_rgba(0,0,0,0.18)] md:mb-3",
-          "transition-[height] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]",
+          // Only apply smooth transition when NOT actively dragging
+          !isDragging && "transition-[height] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]",
           isDark
             ? "bg-[#181d28] text-white border-white/10"
             : "bg-white text-charcoal border-black/[0.05]"
         )}
       >
-        {/* Touch & drag handle bar */}
+        {/* Draggable handle bar — works on touch AND mouse */}
         <div
           onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onClick={toggleSnap}
+          onMouseDown={handleMouseDown}
+          onClick={handleClick}
           className={cn(
             "flex flex-col items-center pt-2.5 pb-1.5 shrink-0 group select-none",
             hasActiveDetail ? "cursor-default" : "cursor-grab active:cursor-grabbing"
@@ -89,9 +171,11 @@ export function BottomSheet({
         {!hasActiveDetail && title && (
           <div
             onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            onClick={toggleSnap}
-            className="px-5 pb-3 flex items-center justify-between shrink-0 cursor-pointer select-none"
+            onMouseDown={handleMouseDown}
+            onClick={handleClick}
+            className="px-5 pb-3 flex items-center justify-between shrink-0 cursor-grab active:cursor-grabbing select-none"
           >
             <h2 className={cn("text-base font-bold", isDark ? "text-white" : "text-charcoal")}>{title}</h2>
 
@@ -114,6 +198,7 @@ export function BottomSheet({
                     e.stopPropagation();
                     onLocate();
                   }}
+                  onMouseDown={(e) => e.stopPropagation()}
                   disabled={isLocating}
                   title="Locate Me"
                   className={cn(
