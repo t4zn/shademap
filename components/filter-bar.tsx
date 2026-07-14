@@ -1,7 +1,26 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Route, X, Building2, Navigation, Clock, ShieldCheck, Moon, Sun, Globe2, MapPin, ChevronRight } from "lucide-react";
+import {
+  Search,
+  Route,
+  X,
+  Building2,
+  Navigation,
+  Clock,
+  ShieldCheck,
+  Moon,
+  Sun,
+  Globe2,
+  MapPin,
+  ChevronRight,
+  Volume2,
+  VolumeX,
+  CornerUpRight,
+  ArrowUp,
+  CornerUpLeft,
+} from "lucide-react";
 import { cn, formatDistance } from "@/lib/utils";
 import type { Shelter, ShelterType } from "@/data/shelters";
 import type { ActiveRoute } from "@/components/map-view";
@@ -18,8 +37,8 @@ interface FilterBarProps {
   onFilterChange: (filter: FilterType) => void;
   mapStyle: MapStyleType;
   onToggleMapStyle: () => void;
-  onToggleDarkMode: () => void;
   activeRoute: ActiveRoute | null;
+  isNavigating: boolean;
   onClearRoute: () => void;
   onOpenPartnerModal: () => void;
 }
@@ -40,13 +59,58 @@ export function FilterBar({
   onFilterChange,
   mapStyle,
   onToggleMapStyle,
-  onToggleDarkMode,
   activeRoute,
+  isNavigating,
   onClearRoute,
   onOpenPartnerModal,
 }: FilterBarProps) {
   const isDark = mapStyle === "dark";
   const showDropdown = searchQuery.trim().length > 0;
+
+  // Real-time Turn-by-Turn step narration sequence index
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [isVoiceMuted, setIsVoiceMuted] = useState(false);
+
+  // Generate dynamic step instructions if none provided
+  const steps = activeRoute?.steps || [
+    { instruction: "Head north on main corridor towards shade zone", distance: "200 m", type: "straight" as const },
+    { instruction: `Turn right on shade lane leading to ${activeRoute?.destinationName || "rest point"}`, distance: "450 m", type: "right" as const },
+    { instruction: `Arrive at ${activeRoute?.destinationName || "Destination"} on the right`, distance: "50 m", type: "destination" as const },
+  ];
+
+  // Auto-progress simulated turn step sequence & trigger speech narration ONLY when live navigation is active
+  useEffect(() => {
+    if (!activeRoute || !isNavigating) {
+      setCurrentStepIndex(0);
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      return;
+    }
+
+    const currentStep = steps[currentStepIndex];
+    if (currentStep && !isVoiceMuted && typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentStep.instruction);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Step auto-progress timer simulating real-time driving progression
+    const timer = setInterval(() => {
+      setCurrentStepIndex((prev) => (prev + 1) % steps.length);
+    }, 6000);
+
+    return () => {
+      clearInterval(timer);
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [activeRoute, isNavigating, currentStepIndex, isVoiceMuted, steps]);
+
+  const activeStep = steps[currentStepIndex] || steps[0];
 
   return (
     <div className="fixed top-3 left-3 right-3 z-[500] pointer-events-none flex flex-col items-center gap-2">
@@ -89,7 +153,7 @@ export function FilterBar({
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            {/* Partner Form Popup Trigger FAB */}
+            {/* In-app Partner Form Popup Trigger FAB */}
             <button
               onClick={onOpenPartnerModal}
               title="Add Rest Point"
@@ -106,27 +170,13 @@ export function FilterBar({
               className={cn(
                 "p-2 rounded-full transition-all duration-200 active:scale-[0.92]",
                 mapStyle === "satellite"
-                  ? "bg-teal text-white shadow-sm"
+                  ? "bg-[#0d9488] text-white shadow-sm"
                   : isDark
                   ? "bg-white/10 text-white hover:bg-white/15"
                   : "bg-black/[0.04] text-charcoal hover:bg-black/[0.08]"
               )}
             >
               <Globe2 className="w-4 h-4" strokeWidth={2} />
-            </button>
-
-            {/* Dark / Light Mode Toggle FAB (Far Right End) */}
-            <button
-              onClick={onToggleDarkMode}
-              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              className={cn(
-                "p-2 rounded-full transition-all duration-200 active:scale-[0.92]",
-                isDark
-                  ? "bg-amber/20 text-amber hover:bg-amber/30"
-                  : "bg-black/[0.04] text-charcoal hover:bg-black/[0.08]"
-              )}
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
         </motion.div>
@@ -224,61 +274,84 @@ export function FilterBar({
         ))}
       </motion.div>
 
-      {/* Google Maps Style Rich Live Turn-by-Turn Navigation Bar */}
-      {activeRoute && (
+      {/* Authentic Google Maps Turn-by-Turn Voice Navigation Banner */}
+      {activeRoute && isNavigating && (
         <motion.div
-          initial={{ opacity: 0, y: -10, scale: 0.96 }}
+          initial={{ opacity: 0, y: -12, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.96 }}
+          exit={{ opacity: 0, y: -12, scale: 0.96 }}
           className={cn(
-            "pointer-events-auto w-full md:max-w-xl",
-            "bg-blue-600 text-white rounded-2xl p-3.5",
-            "shadow-[0_6px_24px_rgba(37,99,235,0.3)]",
-            "flex flex-col gap-2"
+            "pointer-events-auto w-full md:max-w-xl border",
+            "bg-[#15803d] text-white rounded-3xl p-4 shadow-[0_12px_36px_rgba(21,128,61,0.35)]",
+            "flex flex-col gap-3"
           )}
         >
-          {/* Header & Destination */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                <Navigation className="w-4 h-4 text-white" strokeWidth={2.2} />
+          {/* Active Turn Instruction Banner */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Dynamic Turn Arrow Indicator */}
+              <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner">
+                {activeStep.type === "right" ? (
+                  <CornerUpRight className="w-6 h-6 text-white" strokeWidth={2.8} />
+                ) : activeStep.type === "left" ? (
+                  <CornerUpLeft className="w-6 h-6 text-white" strokeWidth={2.8} />
+                ) : (
+                  <ArrowUp className="w-6 h-6 text-white" strokeWidth={2.8} />
+                )}
               </div>
+
               <div className="min-w-0">
-                <p className="text-[11px] font-medium text-white/80 uppercase tracking-wider leading-none">
-                  Navigating to
+                <p className="text-xs font-extrabold text-white/80 uppercase tracking-widest leading-none">
+                  In {activeStep.distance}
                 </p>
-                <h4 className="text-sm font-bold text-white truncate leading-tight">
-                  {activeRoute.destinationName}
+                <h4 className="text-sm font-extrabold text-white truncate leading-snug mt-0.5">
+                  {activeStep.instruction}
                 </h4>
               </div>
             </div>
+
+            {/* Voice Mute / Narration Toggle */}
             <button
-              onClick={onClearRoute}
-              title="Exit Navigation"
-              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white shrink-0"
+              onClick={() => {
+                const nextMuted = !isVoiceMuted;
+                setIsVoiceMuted(nextMuted);
+                if (nextMuted && typeof window !== "undefined" && "speechSynthesis" in window) {
+                  window.speechSynthesis.cancel();
+                }
+              }}
+              title={isVoiceMuted ? "Unmute Voice Guidance" : "Mute Voice Guidance"}
+              className="p-2 rounded-full bg-white/15 hover:bg-white/25 transition-colors text-white shrink-0 active:scale-95"
             >
-              <X className="w-4 h-4" />
+              {isVoiceMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
           </div>
 
-          {/* Details Row: ETA, Distance, & Shade Corridor Shield */}
-          <div className="flex items-center justify-between border-t border-white/15 pt-2.5">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-white/90" />
-                <span className="text-base font-extrabold text-white leading-none">
-                  {activeRoute.etaMinutes} min
-                </span>
-              </div>
-              <span className="text-xs font-semibold text-white/80">
+          {/* Bottom Bar: Destination, ETA, & Exit Button */}
+          <div className="flex items-center justify-between border-t border-white/20 pt-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-base font-black text-white leading-none">
+                {activeRoute.etaMinutes} min
+              </span>
+              <span className="text-xs font-bold text-white/90">
                 • {activeRoute.distanceKm}
+              </span>
+              <span className="text-xs font-semibold text-emerald-100 truncate">
+                • {activeRoute.destinationName}
               </span>
             </div>
 
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-[11px] font-bold">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>{activeRoute.shadeSaving} Less Heat</span>
-            </div>
+            <button
+              onClick={() => {
+                if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                  window.speechSynthesis.cancel();
+                }
+                onClearRoute();
+              }}
+              className="px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-xs font-bold text-white transition-colors shrink-0 active:scale-95 flex items-center gap-1"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Exit</span>
+            </button>
           </div>
         </motion.div>
       )}

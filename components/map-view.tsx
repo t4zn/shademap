@@ -3,10 +3,8 @@
 import { useEffect, useRef } from "react";
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Popup,
-  Polyline,
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
@@ -27,7 +25,6 @@ L.Icon.Default.mergeOptions({
 function createMarkerIcon(type: ShelterType): L.DivIcon {
   const colorClass = type === "platform" ? "platform" : type === "municipal" ? "municipal" : "community";
 
-  // Compact 12px SVG icons
   const iconSvg =
     type === "platform"
       ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>`
@@ -60,12 +57,19 @@ function createUserLocationIcon(): L.DivIcon {
   });
 }
 
+export interface TurnStep {
+  instruction: string;
+  distance: string;
+  type: "straight" | "left" | "right" | "u-turn" | "destination";
+}
+
 export interface ActiveRoute {
   destinationName: string;
   points: [number, number][];
   etaMinutes: number;
   distanceKm: string;
   shadeSaving: string;
+  steps?: TurnStep[];
 }
 
 interface MapViewInnerProps {
@@ -83,15 +87,21 @@ function MapEventsHandler({
   onCenterChange,
   url,
   attribution,
+  activeRoute,
+  mapStyle,
 }: {
   center?: [number, number];
   onCenterChange?: (lat: number, lng: number) => void;
   url: string;
   attribution: string;
+  activeRoute?: ActiveRoute | null;
+  mapStyle: MapStyleType;
 }) {
   const map = useMap();
   const prevCenterRef = useRef<[number, number] | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const polylineCasingRef = useRef<L.Polyline | null>(null);
+  const polylineCoreRef = useRef<L.Polyline | null>(null);
 
   // Safely manage tile layer updates directly on Leaflet map instance without React DOM reconciler unmounting glitches
   useEffect(() => {
@@ -102,6 +112,49 @@ function MapEventsHandler({
     }
   }, [map, url, attribution]);
 
+  // Safely manage polyline navigation route layers imperatively to avoid React DOM element removal errors
+  useEffect(() => {
+    if (activeRoute && activeRoute.points.length > 0) {
+      const casingColor = mapStyle === "dark" ? "#60a5fa" : "#1d4ed8";
+      const coreColor = mapStyle === "dark" ? "#3b82f6" : "#2563eb";
+
+      if (!polylineCasingRef.current) {
+        polylineCasingRef.current = L.polyline(activeRoute.points, {
+          color: casingColor,
+          weight: 10,
+          opacity: 0.5,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(map);
+      } else {
+        polylineCasingRef.current.setLatLngs(activeRoute.points);
+        polylineCasingRef.current.setStyle({ color: casingColor });
+      }
+
+      if (!polylineCoreRef.current) {
+        polylineCoreRef.current = L.polyline(activeRoute.points, {
+          color: coreColor,
+          weight: 6,
+          opacity: 1,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(map);
+      } else {
+        polylineCoreRef.current.setLatLngs(activeRoute.points);
+        polylineCoreRef.current.setStyle({ color: coreColor });
+      }
+    } else {
+      if (polylineCasingRef.current) {
+        map.removeLayer(polylineCasingRef.current);
+        polylineCasingRef.current = null;
+      }
+      if (polylineCoreRef.current) {
+        map.removeLayer(polylineCoreRef.current);
+        polylineCoreRef.current = null;
+      }
+    }
+  }, [map, activeRoute, mapStyle]);
+
   // Smooth fly to center ONLY when center prop actually changes via locate click
   useEffect(() => {
     if (!center) return;
@@ -110,7 +163,7 @@ function MapEventsHandler({
       prevCenterRef.current[0] !== center[0] ||
       prevCenterRef.current[1] !== center[1]
     ) {
-      map.flyTo(center, 13, { duration: 1.2 });
+      map.flyTo(center, 14, { duration: 1.2 });
       prevCenterRef.current = center;
     }
   }, [map, center]);
@@ -167,35 +220,9 @@ function MapViewInner({
         onCenterChange={onCenterChange}
         url={tileUrl}
         attribution={tileAttribution}
+        activeRoute={activeRoute}
+        mapStyle={mapStyle}
       />
-
-      {/* Render Google Maps vibrant royal blue navigation route polyline */}
-      {activeRoute && activeRoute.points.length > 0 && (
-        <>
-          {/* Casing stroke for high visibility contrast */}
-          <Polyline
-            positions={activeRoute.points}
-            pathOptions={{
-              color: mapStyle === "dark" ? "#60a5fa" : "#1d4ed8",
-              weight: 10,
-              opacity: 0.5,
-              lineCap: "round",
-              lineJoin: "round",
-            }}
-          />
-          {/* Core solid Google Blue navigation polyline */}
-          <Polyline
-            positions={activeRoute.points}
-            pathOptions={{
-              color: mapStyle === "dark" ? "#3b82f6" : "#2563eb",
-              weight: 6,
-              opacity: 1,
-              lineCap: "round",
-              lineJoin: "round",
-            }}
-          />
-        </>
-      )}
 
       {/* Blue pulsating dot for user location */}
       {userLocation && (

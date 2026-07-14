@@ -12,6 +12,8 @@ import {
   Snowflake,
   DoorOpen,
   AlertCircle,
+  ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ShelterType } from "@/data/shelters";
@@ -58,16 +60,16 @@ function savePoints(points: SubmittedPoint[]) {
 }
 
 const AMENITY_OPTIONS = [
-  { key: "water" as const, icon: Droplets, label: "Water" },
-  { key: "seating" as const, icon: Armchair, label: "Seating" },
-  { key: "ac" as const, icon: Snowflake, label: "AC" },
-  { key: "restroom" as const, icon: DoorOpen, label: "Restroom" },
+  { key: "water" as const, icon: Droplets, label: "Drinking Water" },
+  { key: "seating" as const, icon: Armchair, label: "Shaded Seating" },
+  { key: "ac" as const, icon: Snowflake, label: "Air Conditioning" },
+  { key: "restroom" as const, icon: DoorOpen, label: "Restroom Access" },
 ];
 
 const TYPE_OPTIONS: { value: ShelterType; label: string; desc: string }[] = [
-  { value: "platform", label: "Platform", desc: "Zomato, Swiggy, Amazon" },
-  { value: "municipal", label: "Municipal", desc: "Govt / civic body" },
-  { value: "community", label: "Community", desc: "Shop, station, sponsor" },
+  { value: "platform", label: "Platform Partner", desc: "Zomato, Swiggy, Blinkit, Zepto" },
+  { value: "municipal", label: "Civic Body", desc: "Municipal & urban heat relief spot" },
+  { value: "community", label: "Community", desc: "Local store, petrol pump, sponsor" },
 ];
 
 export function PartnerModal({ isOpen, onClose, isDark = false }: PartnerModalProps) {
@@ -147,80 +149,75 @@ export function PartnerModal({ isOpen, onClose, isDark = false }: PartnerModalPr
     setAmenities((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const inputClass = cn(
-    "w-full px-3.5 py-2.5 rounded-xl border transition-all duration-200 text-xs focus:outline-none",
-    isDark
-      ? "bg-white/10 border-white/15 text-white placeholder:text-white/40 focus:ring-2 focus:ring-teal/40"
-      : "bg-black/[0.03] border-black/[0.06] text-charcoal placeholder:text-muted/40 focus:ring-2 focus:ring-teal/20"
-  );
-
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Apple-style translucent blurred overlay backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000]"
+            className="fixed inset-0 bg-black/40 backdrop-blur-md z-[1000]"
           />
 
-          {/* Minimal Modal Popup */}
+          {/* Authentic iOS / macOS Sheet Modal Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            exit={{ opacity: 0, scale: 0.95, y: 16 }}
+            transition={{ type: "spring", damping: 30, stiffness: 350 }}
             className={cn(
-              "fixed z-[1001] rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.3)]",
-              "top-[8%] bottom-[8%] left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg md:top-1/2 md:bottom-auto md:-translate-y-1/2 md:max-h-[85vh]",
-              "flex flex-col overflow-hidden border transition-colors duration-300",
+              "fixed z-[1001] rounded-[24px] overflow-hidden",
+              "top-[10%] bottom-[10%] left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-sm md:top-1/2 md:bottom-auto md:-translate-y-1/2 md:max-h-[70vh]",
+              "flex flex-col border transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.35)]",
               isDark
-                ? "bg-[#181d28] border-white/10 text-white"
-                : "bg-white border-black/[0.06] text-charcoal"
+                ? "bg-[#1c222e]/95 backdrop-blur-2xl border-white/15 text-white"
+                : "bg-white/95 backdrop-blur-2xl border-black/10 text-charcoal"
             )}
           >
-            {/* Modal Header */}
+            {/* Apple macOS style header bar with title & Done button */}
             <div
               className={cn(
-                "px-5 py-4 border-b flex items-center justify-between shrink-0",
-                isDark ? "border-white/10 bg-[#181d28]" : "border-black/[0.06] bg-white"
+                "px-5 py-3.5 border-b flex items-center justify-between shrink-0 select-none",
+                isDark ? "border-white/10 bg-[#1c222e]/80" : "border-black/[0.06] bg-slate-50/80"
               )}
             >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-teal/10 flex items-center justify-center">
-                  <Building2 className="w-4 h-4 text-teal" />
-                </div>
-                <div>
-                  <h3 className={cn("text-base font-bold leading-tight", isDark ? "text-white" : "text-charcoal")}>
-                    Add Rest Point
-                  </h3>
-                  <p className={cn("text-xs", isDark ? "text-white/60" : "text-muted")}>
-                    Submit verified shelter for delivery riders
-                  </p>
-                </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className={cn(
+                  "text-xs font-semibold px-2 py-1 rounded-lg transition-colors",
+                  isDark ? "text-white/60 hover:text-white hover:bg-white/10" : "text-muted hover:text-charcoal hover:bg-black/5"
+                )}
+              >
+                Cancel
+              </button>
+
+              <div className="text-center">
+                <h3 className={cn("text-sm font-bold tracking-tight", isDark ? "text-white" : "text-charcoal")}>
+                  Partner Rest Point
+                </h3>
+                <p className={cn("text-[10px] font-medium opacity-60")}>Apple Certified Submission</p>
               </div>
 
               <button
-                onClick={onClose}
-                className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-                  isDark ? "bg-white/10 hover:bg-white/15 text-white/80" : "bg-black/[0.05] hover:bg-black/[0.08] text-muted"
-                )}
+                type="button"
+                onClick={handleSubmit}
+                className="text-xs font-bold text-teal px-2.5 py-1 rounded-full bg-teal/10 hover:bg-teal/20 transition-all active:scale-95"
               >
-                <X className="w-4 h-4" />
+                Add Point
               </button>
             </div>
 
-            {/* Scrollable Form Body */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              {/* Errors */}
+            {/* Apple Grouped List Form Body */}
+            <div className="flex-1 overflow-y-auto p-3.5 space-y-3 scrollbar-none">
+              {/* Validation Messages */}
               {formErrors.length > 0 && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 space-y-1">
+                <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 space-y-1">
                   {formErrors.map((err, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-red-500">
+                    <div key={i} className="flex items-center gap-2 text-xs font-semibold text-red-500">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       {err}
                     </div>
@@ -228,136 +225,186 @@ export function PartnerModal({ isOpen, onClose, isDark = false }: PartnerModalPr
                 </div>
               )}
 
-              {/* Success Notification */}
               {showSuccess && (
-                <div className="p-3 rounded-xl bg-teal/10 border border-teal/20 flex items-center gap-2 text-xs font-semibold text-teal">
-                  <Check className="w-4 h-4" />
-                  Rest point submitted — pending verification!
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  Rest point registered successfully!
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-3">
-                {/* Location Name */}
+                {/* iOS Grouped Section 1: Location Identification */}
                 <div>
-                  <label className={cn("block text-xs font-semibold mb-1", isDark ? "text-white" : "text-charcoal")}>
-                    Location Name *
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted/80 mb-1.5 px-1">
+                    Location Details
                   </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. HP Petrol Bunk — Vijay Nagar"
-                    className={inputClass}
-                  />
-                </div>
+                  <div
+                    className={cn(
+                      "rounded-2xl border overflow-hidden divide-y",
+                      isDark
+                        ? "bg-[#252c3c] border-white/10 divide-white/10"
+                        : "bg-black/[0.03] border-black/[0.06] divide-black/[0.06]"
+                    )}
+                  >
+                    {/* Location Name row */}
+                    <div className="px-3.5 py-2.5 flex items-center justify-between">
+                      <span className="text-xs font-medium shrink-0 w-24">Name</span>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. HP Petrol Pump Rest Canopy"
+                        className={cn(
+                          "w-full text-xs font-medium bg-transparent text-right focus:outline-none",
+                          isDark ? "text-white placeholder:text-white/30" : "text-charcoal placeholder:text-muted/40"
+                        )}
+                      />
+                    </div>
 
-                {/* Address */}
-                <div>
-                  <label className={cn("block text-xs font-semibold mb-1", isDark ? "text-white" : "text-charcoal")}>
-                    Address *
-                  </label>
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Street address, landmark"
-                    className={inputClass}
-                  />
-                </div>
-
-                {/* Lat & Lng */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={cn("block text-xs font-semibold mb-1", isDark ? "text-white" : "text-charcoal")}>
-                      Latitude *
-                    </label>
-                    <input
-                      type="text"
-                      value={lat}
-                      onChange={(e) => setLat(e.target.value)}
-                      placeholder="22.7196"
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className={cn("block text-xs font-semibold mb-1", isDark ? "text-white" : "text-charcoal")}>
-                      Longitude *
-                    </label>
-                    <input
-                      type="text"
-                      value={lng}
-                      onChange={(e) => setLng(e.target.value)}
-                      placeholder="75.8577"
-                      className={inputClass}
-                    />
+                    {/* Address row */}
+                    <div className="px-3.5 py-2.5 flex items-center justify-between">
+                      <span className="text-xs font-medium shrink-0 w-24">Address</span>
+                      <input
+                        type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Street, Landmark, City"
+                        className={cn(
+                          "w-full text-xs font-medium bg-transparent text-right focus:outline-none",
+                          isDark ? "text-white placeholder:text-white/30" : "text-charcoal placeholder:text-muted/40"
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Type Selection */}
+                {/* iOS Grouped Section 2: Coordinates */}
                 <div>
-                  <label className={cn("block text-xs font-semibold mb-1.5", isDark ? "text-white" : "text-charcoal")}>
-                    Category
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted/80 mb-1.5 px-1">
+                    Geo Coordinates
                   </label>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div
+                    className={cn(
+                      "rounded-2xl border overflow-hidden divide-y grid grid-cols-2",
+                      isDark
+                        ? "bg-[#252c3c] border-white/10 divide-white/10"
+                        : "bg-black/[0.03] border-black/[0.06] divide-black/[0.06]"
+                    )}
+                  >
+                    <div className="px-3.5 py-2.5 flex items-center justify-between border-r border-inherit">
+                      <span className="text-xs font-medium shrink-0">Lat</span>
+                      <input
+                        type="text"
+                        value={lat}
+                        onChange={(e) => setLat(e.target.value)}
+                        placeholder="22.7196"
+                        className={cn(
+                          "w-full text-xs font-medium bg-transparent text-right focus:outline-none",
+                          isDark ? "text-white placeholder:text-white/30" : "text-charcoal placeholder:text-muted/40"
+                        )}
+                      />
+                    </div>
+                    <div className="px-3.5 py-2.5 flex items-center justify-between">
+                      <span className="text-xs font-medium shrink-0">Lng</span>
+                      <input
+                        type="text"
+                        value={lng}
+                        onChange={(e) => setLng(e.target.value)}
+                        placeholder="75.8577"
+                        className={cn(
+                          "w-full text-xs font-medium bg-transparent text-right focus:outline-none",
+                          isDark ? "text-white placeholder:text-white/30" : "text-charcoal placeholder:text-muted/40"
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* iOS Grouped Section 3: Partner Category */}
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted/80 mb-1.5 px-1">
+                    Partner Category
+                  </label>
+                  <div
+                    className={cn(
+                      "rounded-2xl border overflow-hidden divide-y",
+                      isDark
+                        ? "bg-[#252c3c] border-white/10 divide-white/10"
+                        : "bg-black/[0.03] border-black/[0.06] divide-black/[0.06]"
+                    )}
+                  >
                     {TYPE_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
                         onClick={() => setType(opt.value)}
                         className={cn(
-                          "p-2 rounded-xl text-left border transition-all active:scale-[0.96]",
+                          "w-full px-3.5 py-2.5 flex items-center justify-between transition-colors text-left",
                           type === opt.value
-                            ? "bg-teal text-white border-teal font-semibold"
-                            : isDark
-                            ? "bg-white/5 text-white/70 border-white/10"
-                            : "bg-black/[0.02] text-muted border-black/[0.04]"
+                            ? isDark
+                              ? "bg-teal/20"
+                              : "bg-teal/10"
+                            : "hover:bg-black/[0.02]"
                         )}
                       >
-                        <p className="text-xs font-bold leading-tight">{opt.label}</p>
-                        <p className="text-[10px] opacity-70 mt-0.5 truncate">{opt.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Amenities Selection */}
-                <div>
-                  <label className={cn("block text-xs font-semibold mb-1.5", isDark ? "text-white" : "text-charcoal")}>
-                    Amenities
-                  </label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {AMENITY_OPTIONS.map(({ key, icon: Icon, label }) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => toggleAmenity(key)}
-                        className={cn(
-                          "flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium border transition-all active:scale-[0.96]",
-                          amenities[key]
-                            ? "bg-teal/20 text-teal border-teal/40 font-semibold"
-                            : isDark
-                            ? "bg-white/5 text-white/70 border-white/10"
-                            : "bg-black/[0.02] text-muted border-black/[0.04]"
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-3.5 h-3.5" />
-                          <span>{label}</span>
+                        <div>
+                          <p className={cn("text-xs font-semibold", type === opt.value && "text-teal")}>
+                            {opt.label}
+                          </p>
+                          <p className={cn("text-[10px]", isDark ? "text-white/50" : "text-muted")}>
+                            {opt.desc}
+                          </p>
                         </div>
-                        {amenities[key] && <Check className="w-3.5 h-3.5" />}
+                        {type === opt.value && <Check className="w-4 h-4 text-teal shrink-0" />}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Submit button */}
-                <button
-                  type="submit"
-                  className="w-full mt-2 py-3 rounded-xl bg-teal text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-teal/90 transition-colors active:scale-[0.97]"
-                >
-                  <Plus className="w-4 h-4" />
-                  Submit Rest Point
-                </button>
+                {/* iOS Grouped Section 4: Available Amenities (iOS Switch Rows) */}
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted/80 mb-1.5 px-1">
+                    Shelter Facilities
+                  </label>
+                  <div
+                    className={cn(
+                      "rounded-2xl border overflow-hidden divide-y",
+                      isDark
+                        ? "bg-[#252c3c] border-white/10 divide-white/10"
+                        : "bg-black/[0.03] border-black/[0.06] divide-black/[0.06]"
+                    )}
+                  >
+                    {AMENITY_OPTIONS.map(({ key, icon: Icon, label }) => (
+                      <div
+                        key={key}
+                        onClick={() => toggleAmenity(key)}
+                        className="px-3.5 py-2.5 flex items-center justify-between cursor-pointer transition-colors hover:bg-black/[0.02]"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className={cn("p-1.5 rounded-lg", isDark ? "bg-white/10 text-white" : "bg-black/5 text-charcoal")}>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="text-xs font-medium">{label}</span>
+                        </div>
+
+                        {/* Authentic iOS Toggle Switch */}
+                        <div
+                          className={cn(
+                            "w-10 h-6 rounded-full p-0.5 transition-colors duration-200 ease-in-out cursor-pointer",
+                            amenities[key] ? "bg-teal" : isDark ? "bg-white/20" : "bg-black/15"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ease-in-out",
+                              amenities[key] ? "translate-x-4" : "translate-x-0"
+                            )}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </form>
             </div>
           </motion.div>

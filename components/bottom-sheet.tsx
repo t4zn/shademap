@@ -11,6 +11,7 @@ interface BottomSheetProps {
   isDark?: boolean;
   onLocate?: () => void;
   isLocating?: boolean;
+  hasActiveDetail?: boolean;
 }
 
 export function BottomSheet({
@@ -20,70 +21,72 @@ export function BottomSheet({
   isDark = false,
   onLocate,
   isLocating = false,
+  hasActiveDetail = false,
 }: BottomSheetProps) {
-  const [snapPoint, setSnapPoint] = useState<"peek" | "half" | "full">("peek");
+  // Remembers user's previous list drawer state (minimized vs expanded)
+  const [userListExpanded, setUserListExpanded] = useState(false);
   const dragStartYRef = useRef<number | null>(null);
 
-  // Smooth CSS-driven Google Maps snap heights
-  const snapHeights = {
-    peek: "185px",
-    half: "55vh",
-    full: "90vh",
-  };
+  // When active location detail is open, lock to 55vh; when viewing list, restore user's exact state
+  const sheetHeight = hasActiveDetail
+    ? "55vh"
+    : userListExpanded
+    ? "60vh"
+    : "185px";
 
   const toggleSnap = () => {
-    if (snapPoint === "peek") setSnapPoint("half");
-    else if (snapPoint === "half") setSnapPoint("full");
-    else setSnapPoint("peek");
+    if (hasActiveDetail) return;
+    setUserListExpanded((prev) => !prev);
   };
 
-  // Ultra-fast lightweight touch/drag gesture handler without heavy JS animation frame loops
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (hasActiveDetail) return;
     dragStartYRef.current = e.touches[0].clientY;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (dragStartYRef.current === null) return;
+    if (hasActiveDetail || dragStartYRef.current === null) return;
     const endY = e.changedTouches[0].clientY;
     const diff = dragStartYRef.current - endY;
     dragStartYRef.current = null;
 
     if (diff > 40) {
-      // Swiped Up
-      if (snapPoint === "peek") setSnapPoint("half");
-      else if (snapPoint === "half") setSnapPoint("full");
+      // Swiped Up -> Expand list
+      setUserListExpanded(true);
     } else if (diff < -40) {
-      // Swiped Down
-      if (snapPoint === "full") setSnapPoint("half");
-      else if (snapPoint === "half") setSnapPoint("peek");
+      // Swiped Down -> Minimize list
+      setUserListExpanded(false);
     }
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[500] pointer-events-none">
+    <div className="fixed bottom-0 left-0 right-0 z-[500] pointer-events-none flex justify-center">
       <div
-        style={{ height: snapHeights[snapPoint] }}
+        style={{ height: sheetHeight }}
         className={cn(
-          "pointer-events-auto flex flex-col overflow-hidden relative border-t",
-          "rounded-t-3xl shadow-[0_-6px_36px_rgba(0,0,0,0.18)]",
+          "pointer-events-auto w-full md:max-w-xl flex flex-col overflow-hidden relative border-t",
+          "rounded-t-3xl md:rounded-3xl shadow-[0_-6px_36px_rgba(0,0,0,0.18)] md:mb-3",
           "transition-[height] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]",
           isDark
             ? "bg-[#181d28] text-white border-white/10"
             : "bg-white text-charcoal border-black/[0.05]"
         )}
       >
-        {/* Touch & drag header bar */}
+        {/* Touch & drag handle bar */}
         <div
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onClick={toggleSnap}
-          className="flex flex-col items-center pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0 group select-none"
+          className={cn(
+            "flex flex-col items-center pt-2.5 pb-1.5 shrink-0 group select-none",
+            hasActiveDetail ? "cursor-default" : "cursor-grab active:cursor-grabbing"
+          )}
         >
           <div className={cn("w-10 h-1.5 rounded-full transition-all group-hover:scale-x-110", isDark ? "bg-white/30" : "bg-black/20")} />
         </div>
 
-        {/* Title bar */}
-        {title && (
+        {/* Header Title Bar (Only displayed in list view; hidden when active detail is open) */}
+        {!hasActiveDetail && title && (
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
@@ -130,8 +133,8 @@ export function BottomSheet({
           </div>
         )}
 
-        {/* High-performance scrollable shelter list */}
-        <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-2.5 scrollbar-none">
+        {/* Scrollable content container */}
+        <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2.5 scrollbar-none">
           {children}
         </div>
       </div>

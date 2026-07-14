@@ -8,7 +8,7 @@ import { haversineDistance, formatDistance } from "@/lib/utils";
 import { FilterBar, type FilterType, type MapStyleType } from "@/components/filter-bar";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { ShelterCard } from "@/components/shelter-card";
-import { ShelterDetail } from "@/components/shelter-detail";
+import { ShelterDetailContent } from "@/components/shelter-detail";
 import { RouteComparison } from "@/components/route-comparison";
 import { PartnerModal } from "@/components/partner-modal";
 import { fetchLiveOSMShelters, fetchOSRMRealRoadRoute } from "@/lib/live-api";
@@ -40,6 +40,7 @@ export default function RootMapPage() {
     null
   );
   const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
 
@@ -136,19 +137,8 @@ export default function RootMapPage() {
     handleLocate();
   }, [handleLocate]);
 
-  const handleShelterSelect = useCallback((shelter: Shelter) => {
-    setSelectedShelter(null);
-    setSelectedShelter(shelter);
-    setMapCenter([shelter.lat, shelter.lng]);
-  }, []);
-
-  const handleGetDirections = useCallback((shelter: Shelter) => {
-    setSelectedShelter(null);
-    setDirectionsShelter(shelter);
-  }, []);
-
-  // In-app live routing generator with actual OSRM real-road geometry
-  const handleStartInAppRouting = useCallback(
+  // Generate turn-by-turn route geometry preview on shelter selection
+  const computeRouteForShelter = useCallback(
     async (shelter: Shelter) => {
       const start: [number, number] = userLocation || DEFAULT_CENTER;
       const destination: [number, number] = [shelter.lat, shelter.lng];
@@ -192,19 +182,32 @@ export default function RootMapPage() {
         distanceKm,
         shadeSaving: "40%",
       });
-
-      setDirectionsShelter(null);
-      setMapCenter(destination);
     },
     [userLocation]
   );
 
+  const handleShelterSelect = useCallback(
+    (shelter: Shelter) => {
+      setSelectedShelter(shelter);
+      setMapCenter([shelter.lat, shelter.lng]);
+      computeRouteForShelter(shelter);
+    },
+    [computeRouteForShelter]
+  );
+
+  // Directly start live turn voice guidance mode when clicking Start In-App Live Route
+  const handleStartInAppRouting = useCallback(
+    (shelter: Shelter) => {
+      setIsNavigating(true);
+      computeRouteForShelter(shelter);
+      setDirectionsShelter(null);
+      setMapCenter([shelter.lat, shelter.lng]);
+    },
+    [computeRouteForShelter]
+  );
+
   const toggleMapStyle = useCallback(() => {
     setMapStyle((prev) => (prev === "satellite" ? "light" : "satellite"));
-  }, []);
-
-  const toggleDarkMode = useCallback(() => {
-    setMapStyle((prev) => (prev === "dark" ? "light" : "dark"));
   }, []);
 
   return (
@@ -231,33 +234,53 @@ export default function RootMapPage() {
           onFilterChange={setActiveFilter}
           mapStyle={mapStyle}
           onToggleMapStyle={toggleMapStyle}
-          onToggleDarkMode={toggleDarkMode}
           activeRoute={activeRoute}
-          onClearRoute={() => setActiveRoute(null)}
+          isNavigating={isNavigating}
+          onClearRoute={() => {
+            setActiveRoute(null);
+            setIsNavigating(false);
+          }}
           onOpenPartnerModal={() => setIsPartnerModalOpen(true)}
         />
       </div>
 
-      {/* Bottom sheet with nearby shelters */}
+      {/* Bottom sheet with nearby shelters or active shelter detail view */}
       <BottomSheet
-        title="Nearby Shelters"
-        count={nearbyShelters.length}
+        title={selectedShelter ? selectedShelter.name : "Nearby Shelters"}
+        count={selectedShelter ? undefined : nearbyShelters.length}
         isDark={mapStyle === "dark"}
         onLocate={handleLocate}
         isLocating={isLocating}
+        hasActiveDetail={!!selectedShelter}
       >
-        {nearbyShelters.map((shelter, i) => (
-          <ShelterCard
-            key={shelter.id}
-            shelter={shelter}
-            distance={formatDistance(shelter.distance)}
-            onSelect={handleShelterSelect}
-            index={i}
+        {selectedShelter ? (
+          <ShelterDetailContent
+            shelter={selectedShelter}
+            onClose={() => {
+              setSelectedShelter(null);
+              setActiveRoute(null);
+              setIsNavigating(false);
+            }}
+            onGetDirections={(s) => {
+              setSelectedShelter(null);
+              handleStartInAppRouting(s);
+            }}
             isDark={mapStyle === "dark"}
           />
-        ))}
+        ) : (
+          nearbyShelters.map((shelter, i) => (
+            <ShelterCard
+              key={shelter.id}
+              shelter={shelter}
+              distance={formatDistance(shelter.distance)}
+              onSelect={handleShelterSelect}
+              index={i}
+              isDark={mapStyle === "dark"}
+            />
+          ))
+        )}
 
-        {nearbyShelters.length === 0 && (
+        {!selectedShelter && nearbyShelters.length === 0 && (
           <div className="text-center py-8">
             <p className="text-sm text-muted">
               {searchQuery
@@ -267,17 +290,6 @@ export default function RootMapPage() {
           </div>
         )}
       </BottomSheet>
-
-      {/* Shelter Detail Modal */}
-      <ShelterDetail
-        shelter={selectedShelter}
-        onClose={() => setSelectedShelter(null)}
-        onGetDirections={(s) => {
-          setSelectedShelter(null);
-          handleStartInAppRouting(s);
-        }}
-        isDark={mapStyle === "dark"}
-      />
 
       {/* Minimal In-App Partner Submission Modal */}
       <PartnerModal
