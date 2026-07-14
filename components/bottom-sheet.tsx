@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, useDragControls, PanInfo } from "framer-motion";
 import { useState, useRef } from "react";
 import { Locate } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,30 +22,13 @@ export function BottomSheet({
   isLocating = false,
 }: BottomSheetProps) {
   const [snapPoint, setSnapPoint] = useState<"peek" | "half" | "full">("peek");
-  const dragControls = useDragControls();
-  const constraintsRef = useRef<HTMLDivElement>(null);
+  const dragStartYRef = useRef<number | null>(null);
 
-  // Smooth Google Maps snap heights
+  // Smooth CSS-driven Google Maps snap heights
   const snapHeights = {
     peek: "185px",
     half: "55vh",
     full: "90vh",
-  };
-
-  // Ultra-responsive Google Maps drag thresholds
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
-    const velocity = info.velocity.y;
-    const offset = info.offset.y;
-
-    if (velocity > 150 || offset > 40) {
-      // Swiping downward
-      if (snapPoint === "full") setSnapPoint("half");
-      else setSnapPoint("peek");
-    } else if (velocity < -150 || offset < -40) {
-      // Swiping upward
-      if (snapPoint === "peek") setSnapPoint("half");
-      else setSnapPoint("full");
-    }
   };
 
   const toggleSnap = () => {
@@ -55,36 +37,47 @@ export function BottomSheet({
     else setSnapPoint("peek");
   };
 
+  // Ultra-fast lightweight touch/drag gesture handler without heavy JS animation frame loops
+  const handleTouchStart = (e: React.TouchEvent) => {
+    dragStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (dragStartYRef.current === null) return;
+    const endY = e.changedTouches[0].clientY;
+    const diff = dragStartYRef.current - endY;
+    dragStartYRef.current = null;
+
+    if (diff > 40) {
+      // Swiped Up
+      if (snapPoint === "peek") setSnapPoint("half");
+      else if (snapPoint === "half") setSnapPoint("full");
+    } else if (diff < -40) {
+      // Swiped Down
+      if (snapPoint === "full") setSnapPoint("half");
+      else if (snapPoint === "half") setSnapPoint("peek");
+    }
+  };
+
   return (
-    <div ref={constraintsRef} className="fixed bottom-0 left-0 right-0 z-[500] pointer-events-none">
-      <motion.div
-        animate={{
-          height: snapHeights[snapPoint],
-        }}
-        transition={{
-          type: "spring",
-          damping: 24,
-          stiffness: 320,
-          mass: 0.6,
-        }}
-        drag="y"
-        dragControls={dragControls}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.15}
-        onDragEnd={handleDragEnd}
+    <div className="fixed bottom-0 left-0 right-0 z-[500] pointer-events-none">
+      <div
+        style={{ height: snapHeights[snapPoint] }}
         className={cn(
-          "pointer-events-auto flex flex-col overflow-hidden transition-colors duration-300 relative",
-          "rounded-t-3xl shadow-[0_-6px_36px_rgba(0,0,0,0.18)] border-t",
+          "pointer-events-auto flex flex-col overflow-hidden relative border-t",
+          "rounded-t-3xl shadow-[0_-6px_36px_rgba(0,0,0,0.18)]",
+          "transition-[height] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]",
           isDark
             ? "bg-[#181d28] text-white border-white/10"
             : "bg-white text-charcoal border-black/[0.05]"
         )}
       >
-        {/* Drag handle area with tap-to-toggle */}
+        {/* Touch & drag header bar */}
         <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           onClick={toggleSnap}
           className="flex flex-col items-center pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0 group select-none"
-          onPointerDown={(e) => dragControls.start(e)}
         >
           <div className={cn("w-10 h-1.5 rounded-full transition-all group-hover:scale-x-110", isDark ? "bg-white/30" : "bg-black/20")} />
         </div>
@@ -92,9 +85,10 @@ export function BottomSheet({
         {/* Title bar */}
         {title && (
           <div
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
             onClick={toggleSnap}
             className="px-5 pb-3 flex items-center justify-between shrink-0 cursor-pointer select-none"
-            onPointerDown={(e) => dragControls.start(e)}
           >
             <h2 className={cn("text-base font-bold", isDark ? "text-white" : "text-charcoal")}>{title}</h2>
 
@@ -126,12 +120,7 @@ export function BottomSheet({
                   )}
                 >
                   {isLocating ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                    >
-                      <Locate className="w-4 h-4" strokeWidth={2} />
-                    </motion.div>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Locate className="w-4 h-4" strokeWidth={2} />
                   )}
@@ -141,11 +130,11 @@ export function BottomSheet({
           </div>
         )}
 
-        {/* Smooth continuous scrollable shelter list */}
+        {/* High-performance scrollable shelter list */}
         <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-2.5 scrollbar-none">
           {children}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

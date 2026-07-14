@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Droplets, Armchair, Snowflake, DoorOpen, Navigation, CheckCircle2, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Shelter } from "@/data/shelters";
@@ -25,24 +24,15 @@ export function ShelterCard({
   shelter,
   distance,
   onSelect,
-  index = 0,
   isDark = false,
 }: ShelterCardProps) {
   const typeConfig = SHELTER_TYPE_CONFIG[shelter.type];
 
   return (
-    <motion.button
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.35,
-        delay: index * 0.04,
-        ease: [0.25, 0.46, 0.45, 0.94],
-      }}
-      whileTap={{ scale: 0.98 }}
+    <button
       onClick={() => onSelect(shelter)}
       className={cn(
-        "w-full text-left p-3.5 rounded-2xl transition-all duration-200 cursor-pointer border",
+        "w-full text-left p-3.5 rounded-2xl transition-colors duration-150 cursor-pointer border active:scale-[0.99]",
         isDark
           ? "bg-[#222834] border-white/10 hover:border-white/20 text-white shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
           : "bg-white border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
@@ -113,6 +103,6 @@ export function ShelterCard({
           )}
         </div>
       </div>
-    </motion.button>
+    </button>
   );
 }
