@@ -225,6 +225,7 @@ export default function RootMapPage() {
           onCenterChange={handleCenterChange}
           mapStyle={mapStyle}
           activeRoute={activeRoute}
+          isNavigating={isNavigating}
         />
 
         {/* Floating Filter & Control Bar */}
@@ -248,8 +249,9 @@ export default function RootMapPage() {
         />
       </div>
 
-      {/* Bottom sheet with nearby shelters or active shelter detail view */}
-      <BottomSheet
+      {/* Bottom sheet with nearby shelters or active shelter detail view (Hidden during active live navigation) */}
+      {!isNavigating && (
+        <BottomSheet
         title={selectedShelter ? selectedShelter.name : "Nearby Shelters"}
         count={selectedShelter ? undefined : nearbyShelters.length}
         isDark={mapStyle === "dark"}
@@ -295,6 +297,7 @@ export default function RootMapPage() {
           </div>
         )}
       </BottomSheet>
+      )}
 
       {/* Minimal In-App Partner Submission Modal */}
       <PartnerModal

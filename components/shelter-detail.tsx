@@ -110,7 +110,7 @@ export function ShelterDetailContent({
         </p>
       </div>
 
-      {/* ─── Active Navigation: Route Summary + Step List ─── */}
+      {/* ─── Active Navigation: Simple Summary ─── */}
       {isNavigating && activeRoute ? (
         <>
           {/* Route Summary Bar */}
@@ -129,46 +129,6 @@ export function ShelterDetailContent({
               <span>{activeRoute.distanceKm}</span>
             </div>
           </div>
-
-          {/* Turn-by-Turn Directions */}
-          {hasSteps && (
-            <div className="space-y-2">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted/80 px-0.5">
-                Directions
-              </h3>
-              <div
-                className={cn(
-                  "rounded-2xl border overflow-hidden divide-y",
-                  isDark
-                    ? "bg-[#222834] border-white/10 divide-white/10"
-                    : "bg-black/[0.02] border-black/[0.05] divide-black/[0.05]"
-                )}
-              >
-                {steps.map((step, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "px-3.5 py-3 flex items-center gap-3 min-h-[48px]",
-                      i === 0 && (isDark ? "bg-teal/10" : "bg-teal/5")
-                    )}
-                  >
-                    <div className={cn(
-                      "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-                      isDark ? "bg-white/10" : "bg-black/[0.05]"
-                    )}>
-                      <StepIcon type={step.type} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className={cn("text-[13px] font-semibold leading-snug", isDark ? "text-white/90" : "text-charcoal")}>
-                        {step.instruction}
-                      </p>
-                      <p className="text-muted/70 text-[11px] font-medium mt-0.5">{step.distance}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Google Maps Button */}
           <button

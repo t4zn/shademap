@@ -171,6 +171,40 @@ body {
   animation: pulse-ring 2s ease-in-out infinite;
 }
 
+/* Authentic Google Maps Navigation Mode Blue Arrow Marker */
+.user-nav-arrow-container {
+  z-index: 1000 !important;
+}
+
+.user-nav-arrow-wrapper {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-nav-arrow-halo {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.user-nav-arrow-icon {
+  position: relative;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.4));
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
 @keyframes pulse-ring {
   0%,
   100% {
