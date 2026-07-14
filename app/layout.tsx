@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   title: "ShadeMap — Shade for Every Rider, Everywhere",
   description:
     "Find the nearest verified shade, water, and rest point during extreme heat — regardless of which delivery platform you ride for.",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
   keywords: [
     "gig workers",
     "shade",
