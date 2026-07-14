@@ -12,11 +12,7 @@ export const metadata: Metadata = {
   title: "ShadeMap — Shade for Every Rider, Everywhere",
   description:
     "Find the nearest verified shade, water, and rest point during extreme heat — regardless of which delivery platform you ride for.",
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
-  },
+  icons: "/favicon.ico",
   keywords: [
     "gig workers",
     "shade",
@@ -48,6 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <head></head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
