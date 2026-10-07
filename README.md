@@ -30,7 +30,7 @@ Deploy to Vercel with **zero required environment variables**:
 3. Deploy — no configuration needed
 
 The app uses:
-- **OpenStreetMap tiles** (CartoDB Positron) — no API key required
+- **Map tiles** — CARTO Positron & Dark Matter (configured via `NEXT_PUBLIC_CARTO_KEY` in `.env.local`, with automatic OpenStreetMap fallback)
 - **Mock JSON data** — no database required
 - **localStorage** for the partner dashboard — no backend required
 

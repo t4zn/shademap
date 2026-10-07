@@ -174,7 +174,7 @@ function MapEventsHandler({
   mapStyle: MapStyleType;
 }) {
   const map = useMap();
-  const prevCenterRef = useRef<[number, number] | null>(null);
+  const prevCenterRef = useRef<[number, number] | null>(center || null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const polylineCasingRef = useRef<L.Polyline | null>(null);
   const polylineCoreRef = useRef<L.Polyline | null>(null);
@@ -260,32 +260,34 @@ function MapEventsHandler({
   useEffect(() => {
     if (!center || activeRoute) return;
     if (
-      !prevCenterRef.current ||
-      prevCenterRef.current[0] !== center[0] ||
-      prevCenterRef.current[1] !== center[1]
+      prevCenterRef.current &&
+      Math.abs(prevCenterRef.current[0] - center[0]) < 0.0001 &&
+      Math.abs(prevCenterRef.current[1] - center[1]) < 0.0001
     ) {
-      // Offset target center upwards so marker remains visible above bottom drawer
-      const targetPoint = map.project(center, 14);
-      const adjustedPoint = L.point(targetPoint.x, targetPoint.y + window.innerHeight * 0.22);
-      const adjustedCenter = map.unproject(adjustedPoint, 14);
-
-      map.flyTo(adjustedCenter, 14, { duration: 1.2 });
-      prevCenterRef.current = center;
+      return;
     }
+
+    // Offset target center upwards so marker remains visible above bottom drawer
+    const targetPoint = map.project(center, 14);
+    const adjustedPoint = L.point(targetPoint.x, targetPoint.y + window.innerHeight * 0.22);
+    const adjustedCenter = map.unproject(adjustedPoint, 14);
+
+    map.flyTo(adjustedCenter, 14, { duration: 1.2 });
+    prevCenterRef.current = center;
   }, [map, center, activeRoute]);
 
-  // Listen to map drag/pan end
+  // Listen to map user drag/pan end (avoid moveend which fires during programmatic flyTo/fitBounds)
   useEffect(() => {
     if (!onCenterChange) return;
 
-    const handleMoveEnd = () => {
+    const handleDragEnd = () => {
       const c = map.getCenter();
       onCenterChange(c.lat, c.lng);
     };
 
-    map.on("moveend", handleMoveEnd);
+    map.on("dragend", handleDragEnd);
     return () => {
-      map.off("moveend", handleMoveEnd);
+      map.off("dragend", handleDragEnd);
     };
   }, [map, onCenterChange]);
 
@@ -302,17 +304,29 @@ function MapViewInner({
   activeRoute = null,
   isNavigating = false,
 }: MapViewInnerProps) {
+  const cartoKey =
+    process.env.NEXT_PUBLIC_CARTO_KEY ||
+    process.env.NEXT_PUBLIC_CARTO_API_KEY ||
+    "cb1_2w21_1_6b9637356383522e7d351a45";
+  const cartoParam = cartoKey ? `?key=${encodeURIComponent(cartoKey)}` : "";
+
   const tileUrl =
     mapStyle === "satellite"
       ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
       : mapStyle === "dark"
-      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+      ? (cartoKey
+          ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${cartoParam}`
+          : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
+      : (cartoKey
+          ? `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png${cartoParam}`
+          : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 
   const tileAttribution =
     mapStyle === "satellite"
       ? "&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
-      : '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
+      : cartoKey
+      ? '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
+      : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
   // Determine heading and snapped position for user marker during navigation
   const navHeading =

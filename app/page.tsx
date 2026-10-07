@@ -61,7 +61,12 @@ export default function RootMapPage() {
   }, [referencePoint[0], referencePoint[1]]);
 
   const handleCenterChange = useCallback((lat: number, lng: number) => {
-    setViewCenter([lat, lng]);
+    setViewCenter((prev) => {
+      if (Math.abs(prev[0] - lat) < 0.0001 && Math.abs(prev[1] - lng) < 0.0001) {
+        return prev;
+      }
+      return [lat, lng];
+    });
   }, []);
 
   // Base shelters array sorted by proximity
