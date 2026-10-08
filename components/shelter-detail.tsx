@@ -15,6 +15,7 @@ import {
   ArrowUp,
   Flag,
   Route,
+  TreePine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Shelter } from "@/data/shelters";
@@ -25,6 +26,7 @@ interface ShelterDetailProps {
   shelter: Shelter | null;
   onClose: () => void;
   onGetDirections: (shelter: Shelter) => void;
+  onCompareRoute?: (shelter: Shelter) => void;
   isDark?: boolean;
   isNavigating?: boolean;
   activeRoute?: ActiveRoute | null;
@@ -56,6 +58,7 @@ export function ShelterDetailContent({
   shelter,
   onClose,
   onGetDirections,
+  onCompareRoute,
   isDark = false,
   isNavigating = false,
   activeRoute = null,
@@ -227,15 +230,30 @@ export function ShelterDetailContent({
               className="w-full py-3.5 rounded-2xl bg-teal text-white text-[13px] font-bold flex items-center justify-center gap-2.5 shadow-md hover:bg-teal/90 transition-all active:scale-[0.98] min-h-[48px]"
             >
               <Navigation className="w-4 h-4" />
-              Start Route
+              Start AI Live Navigation
             </button>
+
+            {onCompareRoute && (
+              <button
+                onClick={() => onCompareRoute(shelter)}
+                className={cn(
+                  "w-full py-2.5 rounded-2xl border text-[12px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
+                  isDark
+                    ? "border-teal/30 bg-teal/10 text-teal hover:bg-teal/20"
+                    : "border-teal/25 bg-teal/[0.06] text-teal hover:bg-teal/10"
+                )}
+              >
+                <TreePine className="w-3.5 h-3.5" />
+                <span>Compare AI Shade vs Direct Route</span>
+              </button>
+            )}
 
             <button
               onClick={openInMaps}
               className={cn(
-                "w-full py-3 rounded-2xl border font-bold text-[13px] flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] min-h-[48px]",
+                "w-full py-2.5 rounded-2xl border font-bold text-[12px] flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] min-h-[42px]",
                 isDark
-                  ? "bg-white/10 border-white/15 text-white hover:bg-white/15"
+                  ? "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
                   : "bg-white border-black/10 text-charcoal hover:bg-black/[0.03] shadow-sm"
               )}
             >

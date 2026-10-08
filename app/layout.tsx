@@ -9,23 +9,26 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ShadeMap — Shade for Every Rider, Everywhere",
+  title: "ShadeMap — AI Thermal Navigation & Smart City Cooling Grid",
   description:
-    "Find the nearest verified shade, water, and rest point during extreme heat — regardless of which delivery platform you ride for.",
+    "AI-driven heat-aware navigation and open smart city cooling shelter grid for last-mile gig workers across Indian cities.",
   icons: "/favicon.ico",
   keywords: [
+    "AI smart cities",
+    "thermal navigation",
+    "solar shadow model",
     "gig workers",
-    "shade",
+    "shade routing",
     "heat relief",
-    "delivery riders",
+    "urban heat island",
     "Swiggy",
     "Zomato",
     "rest points",
   ],
   openGraph: {
-    title: "ShadeMap — Shade for Every Rider, Everywhere",
+    title: "ShadeMap — AI Thermal Navigation & Smart City Cooling Grid",
     description:
-      "No login. No brand. Just shade — for every rider, everywhere.",
+      "AI-driven heat-aware navigation and open smart city cooling shelter grid for last-mile gig workers.",
     type: "website",
   },
 };

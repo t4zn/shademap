@@ -20,6 +20,7 @@ import {
   CornerUpRight,
   ArrowUp,
   CornerUpLeft,
+  TreePine,
 } from "lucide-react";
 import { cn, formatDistance } from "@/lib/utils";
 import type { Shelter, ShelterType } from "@/data/shelters";
@@ -42,6 +43,7 @@ interface FilterBarProps {
   userLocation: [number, number] | null;
   onClearRoute: () => void;
   onOpenPartnerModal: () => void;
+  onDemoRoute?: () => void;
 }
 
 const FILTERS: { value: FilterType; label: string }[] = [
@@ -76,6 +78,7 @@ export function FilterBar({
   userLocation,
   onClearRoute,
   onOpenPartnerModal,
+  onDemoRoute,
 }: FilterBarProps) {
   const isDark = mapStyle === "dark";
   const showDropdown = searchQuery.trim().length > 0;
@@ -207,7 +210,7 @@ export function FilterBar({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search shade, city, water spots..."
+              placeholder="Search shade, smart city rest hubs, water spots..."
               className={cn(
                 "w-full text-sm font-medium bg-transparent focus:outline-none",
                 isDark ? "text-white placeholder:text-white/40" : "text-charcoal placeholder:text-muted/60"
@@ -344,6 +347,40 @@ export function FilterBar({
           </button>
         ))}
       </motion.div>
+
+      {/* Ultra-Clean Minimal Status & 1-Click Demo Capsule */}
+      {!isNavigating && !activeRoute && onDemoRoute && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.15 }}
+          className={cn(
+            "pointer-events-auto w-full md:max-w-xl flex items-center justify-between gap-3 px-3.5 py-1.5 rounded-full border backdrop-blur-xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-all select-none text-xs",
+            isDark
+              ? "bg-[#181d28]/90 border-white/10 text-white"
+              : "bg-white/95 border-black/[0.06] text-charcoal"
+          )}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <span className="font-bold text-amber-600 dark:text-amber-400 shrink-0">43°C Heat Wave</span>
+            <span className={cn("hidden sm:inline truncate font-medium", isDark ? "text-white/60" : "text-muted")}>
+              • AI Solar Shadow Model Active (Smart City Grid)
+            </span>
+          </div>
+
+          <button
+            onClick={onDemoRoute}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal text-white hover:bg-teal/90 active:scale-95 transition-all font-bold shrink-0 shadow-sm text-[11px]"
+          >
+            <TreePine className="w-3.5 h-3.5" />
+            <span>AI Shade Route</span>
+          </button>
+        </motion.div>
+      )}
 
       {/* Authentic Google Maps Turn-by-Turn Voice Navigation Banner */}
       {activeRoute && isNavigating && (

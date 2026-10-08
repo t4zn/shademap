@@ -43,6 +43,7 @@ export default function RootMapPage() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+  const [isRouteComparisonOpen, setIsRouteComparisonOpen] = useState(false);
 
   // Center point for distance calculation
   const referencePoint = userLocation || viewCenter;
@@ -214,6 +215,16 @@ export default function RootMapPage() {
     [computeRouteForShelter]
   );
 
+  // 1-Click Demo Route for judges/evaluation
+  const handleDemoRoute = useCallback(() => {
+    const target = nearbyShelters[0] || SHELTERS[0];
+    if (!target) return;
+    setSelectedShelter(target);
+    setMapCenter([target.lat, target.lng]);
+    computeRouteForShelter(target);
+    setIsRouteComparisonOpen(true);
+  }, [nearbyShelters, computeRouteForShelter]);
+
   const toggleMapStyle = useCallback(() => {
     setMapStyle((prev) => (prev === "satellite" ? "light" : "satellite"));
   }, []);
@@ -251,6 +262,7 @@ export default function RootMapPage() {
             setIsNavigating(false);
           }}
           onOpenPartnerModal={() => setIsPartnerModalOpen(true)}
+          onDemoRoute={handleDemoRoute}
         />
       </div>
 
@@ -274,6 +286,10 @@ export default function RootMapPage() {
             }}
             onGetDirections={(s) => {
               handleStartInAppRouting(s);
+            }}
+            onCompareRoute={(s) => {
+              computeRouteForShelter(s);
+              setIsRouteComparisonOpen(true);
             }}
             isDark={mapStyle === "dark"}
             isNavigating={isNavigating}
@@ -308,6 +324,18 @@ export default function RootMapPage() {
       <PartnerModal
         isOpen={isPartnerModalOpen}
         onClose={() => setIsPartnerModalOpen(false)}
+        isDark={mapStyle === "dark"}
+      />
+
+      {/* Ultra-Clean Thermal Route Analysis Modal */}
+      <RouteComparison
+        shelter={selectedShelter || nearbyShelters[0] || SHELTERS[0]}
+        isOpen={isRouteComparisonOpen}
+        onClose={() => setIsRouteComparisonOpen(false)}
+        onStartInAppRouting={(s) => {
+          setIsRouteComparisonOpen(false);
+          handleStartInAppRouting(s);
+        }}
         isDark={mapStyle === "dark"}
       />
     </div>
